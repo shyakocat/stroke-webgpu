@@ -17,6 +17,7 @@ export async function loadModel() {
 		finalPositions.push(positions[index    ]);
 		finalPositions.push(positions[index + 1]);
 		finalPositions.push(positions[index + 2]);
+		finalPositions.push(0.0)					// padding
 	}
 	return new Float32Array(finalPositions);
 }

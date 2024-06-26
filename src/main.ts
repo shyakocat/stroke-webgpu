@@ -1,4 +1,4 @@
-import { mat4, vec3 } from 'gl-matrix'
+import { mat4, vec3, quat, mat3 } from 'gl-matrix'
 //@ts-ignore
 import fullscreenQuadWGSL from '../shaders/fullscreenQuad.wgsl?raw';
 //@ts-ignore
@@ -13,8 +13,8 @@ async function init() {
     const device = await adapter.requestDevice();
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
     const context = canvas.getContext("webgpu") as GPUCanvasContext;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth * 0.9;
+    canvas.height = window.innerHeight * 0.9;
 
     const devicePixelRatio = window.devicePixelRatio || 1;
     const presentationSize = [
@@ -35,8 +35,8 @@ async function init() {
     const { addFullscreenPass } = createFullscreenPass(device, presentationSize, presentationFormat, outputColorBuffer);
 
     var stats = new Stats();
-    stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-    document.body.appendChild( stats.dom );
+    stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    document.body.appendChild(stats.dom);
 
     function draw() {
 
@@ -120,7 +120,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const [WIDTH, HEIGHT] = presentationSize
     const COLOR_CHANNELS = 3
 
-    const NUMBER_PRE_ELEMENT = 3 * 3    // triangle, 3 vertex, 3 f32 per vertex
+    const NUMBER_PRE_ELEMENT = 3 * 4    // triangle, 3 vertex, (3 + 1) f32 per vertex
     const strokeCount = strokeData.length / NUMBER_PRE_ELEMENT
     const strokeBuffer = device.createBuffer({
         size: strokeData.byteLength,
@@ -134,9 +134,9 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const outputColorBuffer = device.createBuffer({ size: outputColorBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
 
     const UBOBufferSize =
-        4 * 2 +     // screenWidth, screenHeight
-        4 * 16 +    // MVP
-        8           // extra padding for alignment
+        (4 + 12) * 2 +  // screenWidth, screenHeight
+        4 * 16 +        // MVP
+        (4 + 12)        // strokeType
     const UBOBuffer = device.createBuffer({ size: UBOBufferSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST })
 
     const bindGroupLayout = device.createBindGroupLayout({
@@ -165,25 +165,16 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         compute: { module: computeRasterizerModule, entryPoint: "clear" }
     })
 
-    const aspect = WIDTH / HEIGHT
-    const projectionMatrix = mat4.create()
-    mat4.perspective(projectionMatrix, 0.4 * Math.PI, aspect, 1, 100.0)
+    const cameraCtrl: CameraControl = new CameraWander(WIDTH, HEIGHT)
 
     const addRasterizerPass = (commandEncoder: GPUCommandEncoder) => {
-        const now = Date.now() / 1000
-        const viewMatrix = mat4.create()
-        mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(4, 2, -10))
-        const modelMatrix = mat4.create()
-        mat4.rotate(modelMatrix, modelMatrix, now, vec3.fromValues(0, 1, 0))
-        mat4.rotate(modelMatrix, modelMatrix, Math.PI / 2, vec3.fromValues(1, 0, 0))
-        const modelViewProjectionMatrix = <Float32Array>mat4.create()
-        mat4.multiply(modelViewProjectionMatrix, viewMatrix, modelMatrix)
-        mat4.multiply(modelViewProjectionMatrix, projectionMatrix, modelViewProjectionMatrix)
+
+        const mvp = cameraCtrl.getMVP()
 
         const uniformData = [WIDTH, HEIGHT]
         const uniformTypeArray = new Float32Array(uniformData)
         device.queue.writeBuffer(UBOBuffer, 0, uniformTypeArray.buffer)
-        device.queue.writeBuffer(UBOBuffer, 16, modelViewProjectionMatrix.buffer)
+        device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
 
         const cmd = commandEncoder.beginComputePass()
         let totalTimesToRun = Math.ceil((WIDTH * HEIGHT) / 256)
@@ -200,4 +191,100 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     }
 
     return { addRasterizerPass, outputColorBuffer }
+}
+
+abstract class CameraControl {
+    abstract getMVP(): mat4;
+}
+
+class CameraSpin extends CameraControl {
+    modelMatrix: mat4;
+    viewMatrix: mat4;
+    projectionMatrix: mat4;
+
+    constructor(WIDTH: number, HEIGHT: number) {
+        super();
+        const aspect = WIDTH / HEIGHT
+        this.projectionMatrix = mat4.create()
+        mat4.perspective(this.projectionMatrix, 0.4 * Math.PI, aspect, 1, 100.0)
+        this.viewMatrix = mat4.create()
+        this.modelMatrix = mat4.create()
+    }
+
+    getMVP() {
+        const now = Date.now() / 1000
+        this.viewMatrix = mat4.create()
+        mat4.translate(this.viewMatrix, this.viewMatrix, vec3.fromValues(4, 2, -10))
+        this.modelMatrix = mat4.create()
+        mat4.rotate(this.modelMatrix, this.modelMatrix, now, vec3.fromValues(0, 1, 0))
+        mat4.rotate(this.modelMatrix, this.modelMatrix, Math.PI / 2, vec3.fromValues(1, 0, 0))
+        const modelViewProjectionMatrix = <Float32Array>mat4.create()
+        mat4.multiply(modelViewProjectionMatrix, this.viewMatrix, this.modelMatrix)
+        mat4.multiply(modelViewProjectionMatrix, this.projectionMatrix, modelViewProjectionMatrix)
+        return modelViewProjectionMatrix
+    }
+}
+
+class CameraWander extends CameraControl {
+    distance: number;
+    intersect: vec3;
+    rotate: vec3;
+    projectionMatrix: mat4;
+
+
+    constructor(WIDTH: number, HEIGHT: number) {
+        super()
+        const aspect = WIDTH / HEIGHT
+        this.projectionMatrix = mat4.create()
+        mat4.perspective(this.projectionMatrix, 0.4 * Math.PI, aspect, 1, 100.0)
+        this.distance = 10
+        this.intersect = vec3.fromValues(4, -2, 0)
+        this.rotate = vec3.fromValues(0, 0, 0)
+        let mouseX : number | undefined = undefined, mouseY : number | undefined = undefined
+        let _rotate : vec3 | undefined = undefined
+        let _this = this
+        document.onmousedown = function (event : MouseEvent) {
+            mouseX = event.pageX
+            mouseY = event.pageY
+            _rotate = vec3.create()
+            vec3.copy(_rotate, _this.rotate)
+        }
+        document.onmousemove = function (event : MouseEvent) {
+            if (event.buttons & 1 && mouseX !== undefined && mouseY !== undefined && _rotate !== undefined) {
+                let dx = event.pageX - mouseX
+                let dy = event.pageY - mouseY
+                vec3.add(_this.rotate, _rotate, vec3.fromValues(dx * 0.2, dy * 0.2, 0))
+            }
+        }
+        document.onmouseup = function (event : MouseEvent) {
+            mouseX = undefined
+            mouseY = undefined
+            _rotate = undefined
+        }
+        document.onwheel = function (event : WheelEvent) {
+            _this.distance += event.deltaY * 0.01
+        }
+
+    }
+
+    getMVP(): mat4 {
+        const q = quat.create()
+        quat.fromEuler(q, this.rotate[1], this.rotate[0], this.rotate[2])
+
+        const m_eye = vec3.create()
+        vec3.transformQuat(m_eye, vec3.fromValues(0, 0, -this.distance), q)
+        vec3.add(m_eye, m_eye, this.intersect)
+        const m_center = vec3.create()
+        vec3.transformQuat(m_center, vec3.fromValues(0, 0, 1), q)
+        vec3.add(m_center, m_center, m_eye)
+        const m_up = vec3.create()
+        vec3.transformQuat(m_up, vec3.fromValues(0, 1, 0), q)
+
+        const viewMatrix = mat4.create()
+        mat4.lookAt(viewMatrix, m_eye, m_center, m_up)
+        // world = mat4 Identity
+        const mvp = <Float32Array>mat4.create()
+        mat4.multiply(mvp, this.projectionMatrix, viewMatrix)
+        return mvp
+    }
 }

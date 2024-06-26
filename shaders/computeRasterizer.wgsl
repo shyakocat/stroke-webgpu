@@ -6,18 +6,22 @@ struct UBO {
     screenWidth: f32,
     screenHeight: f32,
     modelViewProjectionMatrix: mat4x4<f32>,
-};
-
-struct Entity {
-    transform: mat4x4<f32>,
+    strokeType: u32,
 };
 
 // warn: vec3<f32> size 12 but align to 16
-struct Vertex { x: f32, y: f32, z: f32, }
+struct Entity { transform: mat4x4<f32>, color: vec4<f32>, }; // density => color.w
 
-struct StrokeBuffer {
-    data: array<Vertex>,
-};
+struct Triangle { verts: array<vec3<f32>, 3>, };
+struct Sphere { base: Entity, }; 
+struct Cube { base: Entity, };
+struct Tetrahedron { base: Entity, };
+struct Octahedron { base: Entity, };
+struct RoundCube { base: Entity, r: f32, };
+struct Triprism { base: Entity, h: f32, };
+struct Capsule { base: Entity, h: f32, r: f32, };
+
+struct StrokeBuffer { data: array<f32>, };
 
 @group(0) @binding(0) var<storage, read_write> outputColorBuffer : ColorBuffer;
 @group(0) @binding(1) var<storage, read> strokeBuffer : StrokeBuffer;
@@ -80,8 +84,8 @@ fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
     }
 }
 
-fn project(v: Vertex) -> vec3<f32> {
-    var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(v.x, v.y, v.z, 1.0);
+fn project(v: vec3<f32>) -> vec3<f32> {
+    var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(v, 1.0);
     screenPos.x = (screenPos.x / screenPos.w) * uniforms.screenWidth;
     screenPos.y = (screenPos.y / screenPos.w) * uniforms.screenHeight;
     return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
@@ -96,13 +100,20 @@ fn is_off_screen(v: vec3<f32>) -> bool {
 
 @compute @workgroup_size(256, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let index = global_id.x * 3u;
+    if uniforms.strokeType == 0 {
+        let index = global_id.x * 12u;
 
-    let v1 = project(strokeBuffer.data[index + 0u]);
-    let v2 = project(strokeBuffer.data[index + 1u]);
-    let v3 = project(strokeBuffer.data[index + 2u]);
+        var v1 = vec3<f32>(strokeBuffer.data[index + 0u], strokeBuffer.data[index + 1u], strokeBuffer.data[index + 2u]);
+        var v2 = vec3<f32>(strokeBuffer.data[index + 4u], strokeBuffer.data[index + 5u], strokeBuffer.data[index + 6u]);
+        var v3 = vec3<f32>(strokeBuffer.data[index + 8u], strokeBuffer.data[index + 9u], strokeBuffer.data[index + 10u]);
 
-    draw_triangle(v1, v2, v3);
+        v1 = project(v1);
+        v2 = project(v2);
+        v3 = project(v3);
+
+        draw_triangle(v1, v2, v3);
+    }
+    
 }
 
 
