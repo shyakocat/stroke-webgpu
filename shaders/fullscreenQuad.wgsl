@@ -35,7 +35,7 @@ fn frag_main(@builtin(position) coord : vec4<f32>) -> @location(0) vec4<f32> {
     let index = u32(X + Y * uniforms.screenWidth) * 3u;
 
     let R = f32(finalColorBuffer.pixels[index + 0u]) / 255.0;
-    let G = f32(finalColorBuffer.pixels[inedx + 1u]) / 255.0;
+    let G = f32(finalColorBuffer.pixels[index + 1u]) / 255.0;
     let B = f32(finalColorBuffer.pixels[index + 2u]) / 255.0;
 
     let finalColor = vec4<f32>(R, G, B, 1.0);
