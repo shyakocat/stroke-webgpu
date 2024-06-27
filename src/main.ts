@@ -214,7 +214,7 @@ class CameraSpin extends CameraControl {
     getMVP() {
         const now = Date.now() / 1000
         this.viewMatrix = mat4.create()
-        mat4.translate(this.viewMatrix, this.viewMatrix, vec3.fromValues(4, 2, -10))
+        mat4.translate(this.viewMatrix, this.viewMatrix, vec3.fromValues(0, 0, -10))
         this.modelMatrix = mat4.create()
         mat4.rotate(this.modelMatrix, this.modelMatrix, now, vec3.fromValues(0, 1, 0))
         mat4.rotate(this.modelMatrix, this.modelMatrix, Math.PI / 2, vec3.fromValues(1, 0, 0))
@@ -238,30 +238,31 @@ class CameraWander extends CameraControl {
         this.projectionMatrix = mat4.create()
         mat4.perspective(this.projectionMatrix, 0.4 * Math.PI, aspect, 1, 100.0)
         this.distance = 10
-        this.intersect = vec3.fromValues(4, -2, 0)
+        this.intersect = vec3.fromValues(0, 0, 0)
         this.rotate = vec3.fromValues(0, 0, 0)
-        let mouseX : number | undefined = undefined, mouseY : number | undefined = undefined
-        let _rotate : vec3 | undefined = undefined
+        let mouseDownDirection = <boolean | undefined> undefined
         let _this = this
         document.onmousedown = function (event : MouseEvent) {
-            mouseX = event.pageX
-            mouseY = event.pageY
-            _rotate = vec3.create()
-            vec3.copy(_rotate, _this.rotate)
+            const q = quat.create()
+            quat.fromEuler(q, _this.rotate[1], _this.rotate[0], _this.rotate[2])
+            const m_up = vec3.create()
+            vec3.transformQuat(m_up, vec3.fromValues(0, 1, 0), q)
+            const up_dot_y = vec3.dot(m_up, vec3.fromValues(0, 1, 0))
+            mouseDownDirection = up_dot_y > 0
         }
-        document.onmousemove = function (event : MouseEvent) {
-            if (event.buttons & 1 && mouseX !== undefined && mouseY !== undefined && _rotate !== undefined) {
-                let dx = event.pageX - mouseX
-                let dy = event.pageY - mouseY
-                vec3.add(_this.rotate, _rotate, vec3.fromValues(dx * 0.2, dy * 0.2, 0))
+        document.onmousemove = function (event: MouseEvent) {
+            if (event.buttons & 1 && mouseDownDirection !== undefined) {
+                let dx = event.movementX
+                let dy = event.movementY
+                let ay = -0.2
+                let ax = mouseDownDirection ? -0.2 : 0.2
+                vec3.add(_this.rotate, _this.rotate, vec3.fromValues(dx * ax, dy * ay, 0))
             }
         }
         document.onmouseup = function (event : MouseEvent) {
-            mouseX = undefined
-            mouseY = undefined
-            _rotate = undefined
+            mouseDownDirection = undefined
         }
-        document.onwheel = function (event : WheelEvent) {
+        document.onwheel = function (event: WheelEvent) {
             _this.distance += event.deltaY * 0.01
         }
 

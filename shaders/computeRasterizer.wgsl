@@ -86,8 +86,8 @@ fn draw_line(v1: vec3<f32>, v2: vec3<f32>) {
 
 fn project(v: vec3<f32>) -> vec3<f32> {
     var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(v, 1.0);
-    screenPos.x = (screenPos.x / screenPos.w) * uniforms.screenWidth;
-    screenPos.y = (screenPos.y / screenPos.w) * uniforms.screenHeight;
+    screenPos.x = (screenPos.x / screenPos.w + 0.5) * uniforms.screenWidth;
+    screenPos.y = (screenPos.y / screenPos.w + 0.5) * uniforms.screenHeight;
     return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
 }
 
