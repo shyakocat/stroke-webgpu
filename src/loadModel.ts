@@ -1,23 +1,26 @@
-import { WebIO } from '@gltf-transform/core';
+import { mat4, vec3, quat } from 'gl-matrix';
+//import { WebIO } from '@gltf-transform/core';
 //@ts-ignore
-import modelUrl from '../models/suzanne.glb?url';
+import modelData from '../models/lego_ellipsoid_500_strokes/stroke.json'
+//import modelUrl from '../models/suzanne.glb?url';
 //import modelUrl from '../models/box.gltf?url';
 
 export async function loadModel() {
-	const io = new WebIO({credentials: 'include'});
-	const doc = await io.read(modelUrl);
 
-	const positions = doc.getRoot().listMeshes()[0].listPrimitives()[0].getAttribute('POSITION')!.getArray()!;
-	const indices = doc.getRoot().listMeshes()[0].listPrimitives()[0].getIndices()!.getArray()!;
 	const finalPositions = [];
 
-	for (let i = 0; i < indices.length; i++) {
-		const index = indices[i] * 3;
-
-		finalPositions.push(positions[index    ]);
-		finalPositions.push(positions[index + 1]);
-		finalPositions.push(positions[index + 2]);
-		finalPositions.push(0.0)					// padding
+	for (let o of Object.values(modelData.stroke_params)) {
+		let ps = o.shape_params;
+		let m = mat4.create();
+		let s = vec3.fromValues(ps[0], ps[1], ps[2]);
+		let q = quat.create();
+		quat.fromEuler(q, ps[3] * 180 / Math.PI, ps[4] * 180 / Math.PI, ps[5] * 180 / Math.PI);
+		let t = vec3.fromValues(ps[6], ps[7], ps[8]);
+		mat4.fromRotationTranslationScale(m, q, t, s);
+		finalPositions.push(...m);
+		finalPositions.push(...o.color_params);
+		finalPositions.push(o.density_params);
 	}
+
 	return new Float32Array(finalPositions);
 }

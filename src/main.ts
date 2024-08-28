@@ -118,9 +118,10 @@ function createFullscreenPass(device: GPUDevice, presentationSize: number[], pre
 
 function createRasterizerPass(device: GPUDevice, presentationSize: number[], strokeData: Float32Array) {
     const [WIDTH, HEIGHT] = presentationSize
-    const COLOR_CHANNELS = 3
+    const COLOR_CHANNELS = 7 + 1            // LightPillar
 
-    const NUMBER_PRE_ELEMENT = 3 * 4    // triangle, 3 vertex, (3 + 1) f32 per vertex
+    // const NUMBER_PRE_ELEMENT = 3 * 4     // triangle, 3 vertex, (3 + 1) f32 per vertex
+    const NUMBER_PRE_ELEMENT = 20           // transform 4x4 f32, color 3 f32, density 1 f32
     const strokeCount = strokeData.length / NUMBER_PRE_ELEMENT
     const strokeBuffer = device.createBuffer({
         size: strokeData.byteLength,
@@ -132,26 +133,32 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
 
     const outputColorBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT) * COLOR_CHANNELS;
     const outputColorBuffer = device.createBuffer({ size: outputColorBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
+    
+    const casBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT);
+    const casBuffer = device.createBuffer({ size: casBufferSize, usage: GPUBufferUsage.STORAGE })
 
     const UBOBufferSize =
         (4 + 12) * 2 +  // screenWidth, screenHeight
         4 * 16 +        // MVP
-        (4 + 12)        // strokeType
+        (4 + 12) +      // strokeType
+        (4 + 12)        // layerCount
     const UBOBuffer = device.createBuffer({ size: UBOBufferSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST })
 
     const bindGroupLayout = device.createBindGroupLayout({
         entries: [
             { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
-            { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
-            { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
+            { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+            { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
+            { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
         ]
     })
     const bindGroup = device.createBindGroup({
         layout: bindGroupLayout,
         entries: [
             { binding: 0, resource: { buffer: outputColorBuffer } },
-            { binding: 1, resource: { buffer: strokeBuffer } },
-            { binding: 2, resource: { buffer: UBOBuffer } }
+            { binding: 1, resource: { buffer: casBuffer } },
+            { binding: 2, resource: { buffer: strokeBuffer } },
+            { binding: 3, resource: { buffer: UBOBuffer } }
         ]
     })
 
