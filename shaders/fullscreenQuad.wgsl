@@ -5,7 +5,6 @@ struct LightPillar {
     density: f32,
     color: vec3<f32>,
 };
-const light_pillar_lambda : f32 = 1.0f;
 
 struct LightPillarBuffer {
     segments: array<LightPillar>,

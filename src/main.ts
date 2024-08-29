@@ -133,15 +133,13 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
 
     const outputColorBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT) * COLOR_CHANNELS;
     const outputColorBuffer = device.createBuffer({ size: outputColorBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
-    
+
     const casBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT);
     const casBuffer = device.createBuffer({ size: casBufferSize, usage: GPUBufferUsage.STORAGE })
 
     const UBOBufferSize =
-        (4 + 12) * 2 +  // screenWidth, screenHeight
-        4 * 16 +        // MVP
-        (4 + 12) +      // strokeType
-        (4 + 12)        // layerCount
+        4 + 4 + 4 + 4 + // screenWidth, screenHeight, strokeType, layerCount
+        4 * 16          // MVP
     const UBOBuffer = device.createBuffer({ size: UBOBufferSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST })
 
     const bindGroupLayout = device.createBindGroupLayout({
@@ -178,9 +176,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
 
         const mvp = cameraCtrl.getMVP()
 
-        const uniformData = [WIDTH, HEIGHT]
-        const uniformTypeArray = new Float32Array(uniformData)
-        device.queue.writeBuffer(UBOBuffer, 0, uniformTypeArray.buffer)
+        device.queue.writeBuffer(UBOBuffer, 0, new Float32Array([WIDTH, HEIGHT]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([1, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
 
         const cmd = commandEncoder.beginComputePass()
@@ -213,7 +210,7 @@ class CameraSpin extends CameraControl {
         super();
         const aspect = WIDTH / HEIGHT
         this.projectionMatrix = mat4.create()
-        mat4.perspective(this.projectionMatrix, 0.4 * Math.PI, aspect, 1, 100.0)
+        mat4.perspective(this.projectionMatrix, 0.4 * Math.PI, aspect, 0.01, 100.0)
         this.viewMatrix = mat4.create()
         this.modelMatrix = mat4.create()
     }
@@ -247,9 +244,9 @@ class CameraWander extends CameraControl {
         this.distance = 10
         this.intersect = vec3.fromValues(0, 0, 0)
         this.rotate = vec3.fromValues(0, 0, 0)
-        let mouseDownDirection = <boolean | undefined> undefined
+        let mouseDownDirection = <boolean | undefined>undefined
         let _this = this
-        document.onmousedown = function (event : MouseEvent) {
+        document.onmousedown = function (event: MouseEvent) {
             const q = quat.create()
             quat.fromEuler(q, _this.rotate[1], _this.rotate[0], _this.rotate[2])
             const m_up = vec3.create()
@@ -266,7 +263,7 @@ class CameraWander extends CameraControl {
                 vec3.add(_this.rotate, _this.rotate, vec3.fromValues(dx * ax, dy * ay, 0))
             }
         }
-        document.onmouseup = function (event : MouseEvent) {
+        document.onmouseup = function (event: MouseEvent) {
             mouseDownDirection = undefined
         }
         document.onwheel = function (event: WheelEvent) {

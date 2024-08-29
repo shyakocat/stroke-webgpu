@@ -1,3 +1,5 @@
+const LIGHT_PILLAR_LAMBDA : f32 = 1.0f;
+
 struct LightPillar {    // align(8) size(16)
     key: f32,           // density * exp(-lambda * depth)
     depth: f32,
@@ -5,17 +7,15 @@ struct LightPillar {    // align(8) size(16)
     density: f32,
     color: vec3<f32>,
 };
-const light_pillar_lambda : f32 = 1.0f;
 
 struct LightPillarBuffer { segments: array<LightPillar>, };
 struct SpinLockBuffer { cas: array<atomic<u32>>, };
 
-struct UBO {
+struct UBO {            // align(16) size(32)
     screenWidth: f32,
     screenHeight: f32,
-    modelViewProjectionMatrix: mat4x4<f32>,
     strokeType: u32,                                // 1
-    layerCount: u32,                                // 1
+    modelViewProjectionMatrix: mat4x4<f32>,
 };
 
 // warn: vec3<f32> size 12 but align to 16
@@ -98,8 +98,8 @@ fn depth_test(x: u32, y: u32, l: LightPillar) {
     // 用自旋锁来保证深度写入不冲突
     var own: bool;
     loop {
+        own = atomicCompareExchangeWeak(&spinLockBuffer.cas[index], 0u, 1u).exchanged;
         own = true;
-        //own = atomicCompareExchangeWeak(&spinLockBuffer.cas[index], 0u, 1u).exchanged;
         if own {
             if l.key < outputBuffer.segments[index].key { outputBuffer.segments[index] = l; }
             atomicStore(&spinLockBuffer.cas[index], 0u);
@@ -148,7 +148,7 @@ fn rasterize_sphere(data: Sphere) {
             tmp.density = data.base.color.w;
             tmp.depth = root1;
             tmp.length = root2 - root1;
-            tmp.key = tmp.density * exp(-light_pillar_lambda * tmp.depth);
+            tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
             depth_test(x, y, tmp);
         }
     }
@@ -161,13 +161,13 @@ fn clear(@builtin(global_invocation_id) global_id: vec3<u32>) {
     outputBuffer.segments[index].key = 1e7f;
     outputBuffer.segments[index].density = 0.0f;
     outputBuffer.segments[index].color = vec3f(0.0f, 0.0f, 0.0f);
-    outputBuffer.segments[index].depth = -10f;
+    outputBuffer.segments[index].depth = 1.1e2f;
     outputBuffer.segments[index].length = 0.0f;
 }
 
 @compute @workgroup_size(256, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if uniforms.strokeType == 0 {   // Ellipsoid
+    if uniforms.strokeType == 1 {   // Ellipsoid
         let index = global_id.x * 20u;
         var data: Sphere;
         data.base.transform = mat4x4<f32>(
