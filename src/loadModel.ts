@@ -9,6 +9,14 @@ export async function loadModel() {
 
 	const finalPositions = [];
 
+	// modelData.stroke_params = {
+	// 	"strokeNo.1": {
+	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0],
+	// 		color_params: [1.0, 0, 0],
+	// 		density_params: 1.0,
+	// 	}
+	// }
+
 	for (let o of Object.values(modelData.stroke_params)) {
 		let ps = o.shape_params;
 		let m = mat4.create();

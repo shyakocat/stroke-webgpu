@@ -1,4 +1,4 @@
-const LIGHT_PILLAR_LAMBDA : f32 = 1.0f;
+const LIGHT_PILLAR_LAMBDA = 1.0f;
 
 struct LightPillar {    // align(8) size(16)
     key: f32,           // density * exp(-lambda * depth)
@@ -11,7 +11,7 @@ struct LightPillar {    // align(8) size(16)
 struct LightPillarBuffer { segments: array<LightPillar>, };
 struct SpinLockBuffer { cas: array<atomic<u32>>, };
 
-struct UBO {            // align(16) size(32)
+struct UBO {            // align(16) size(80)
     screenWidth: f32,
     screenHeight: f32,
     strokeType: u32,                                // 1
@@ -40,9 +40,9 @@ struct StrokeBuffer { data: array<f32>, };
 
 fn project(v: vec3<f32>) -> vec3<f32> {
     var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(v, 1.0);
-    screenPos.x = (screenPos.x / screenPos.w + 0.5) * uniforms.screenWidth;
-    screenPos.y = (screenPos.y / screenPos.w + 0.5) * uniforms.screenHeight;
-    return vec3<f32>(screenPos.x, screenPos.y, screenPos.w);
+    screenPos.x = (screenPos.x / screenPos.w * 0.5 + 0.5) * uniforms.screenWidth;
+    screenPos.y = (screenPos.y / screenPos.w * 0.5 + 0.5) * uniforms.screenHeight;
+    return vec3<f32>(screenPos.x, screenPos.y, screenPos.z / screenPos.w);
 }
 
 fn is_off_screen(v: vec3<f32>) -> bool {
@@ -98,7 +98,7 @@ fn depth_test(x: u32, y: u32, l: LightPillar) {
     // 用自旋锁来保证深度写入不冲突
     var own: bool;
     loop {
-        own = atomicCompareExchangeWeak(&spinLockBuffer.cas[index], 0u, 1u).exchanged;
+        //own = atomicCompareExchangeWeak(&spinLockBuffer.cas[index], 0u, 1u).exchanged;
         own = true;
         if own {
             if l.key < outputBuffer.segments[index].key { outputBuffer.segments[index] = l; }
@@ -126,29 +126,43 @@ fn rasterize_sphere(data: Sphere) {
         cube_min = min(cube_min, cube[i]);
         cube_max = max(cube_max, cube[i]);
     }
-    let startX = u32(clamp(cube_min.x, 0.0f, uniforms.screenWidth));
-    let startY = u32(clamp(cube_min.y, 0.0f, uniforms.screenHeight));
-    let endX = u32(clamp(cube_max.x, 0.0f, uniforms.screenWidth));
-    let endY = u32(clamp(cube_max.y, 0.0f, uniforms.screenHeight));
-    // 通过列一元二次方程，求解。设(x, y, t)为交点p，则p = u * t + v，列出|p| = 1解得t。
+    let startX = u32(clamp(cube_min.x, 0.0f, uniforms.screenWidth - 1e-3));
+    let startY = u32(clamp(cube_min.y, 0.0f, uniforms.screenHeight - 1e-3));
+    let endX = u32(clamp(cube_max.x, 0.0f, uniforms.screenWidth - 1e-3));
+    let endY = u32(clamp(cube_max.y, 0.0f, uniforms.screenHeight - 1e-3));
+    // 通过列一元二次方程，求解。设交点p，则p = u * t + v，列出|p| = 1解得t。
     for (var x: u32 = startX; x <= endX; x = x + 1u) {
         for (var y: u32 = startY; y <= endY; y = y + 1u) {
-            let u = m_inv * vec4<f32>(f32(x) / uniforms.screenWidth - 0.5f, f32(y) / uniforms.screenHeight - 0.5f, 1, 0);
-            let v = m_inv * vec4<f32>(0, 0, 0, 1);
+            //outputBuffer.segments[x + y * u32(uniforms.screenWidth)].color = vec3f(1, 0, 0); continue;
+            var _u : vec4f = m_inv * vec4<f32>(f32(x) / uniforms.screenWidth * 2f - 1f, f32(y) / uniforms.screenHeight * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v : vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u : vec3f = _u.xyz;
+            let v : vec3f = (_u - _v).xyz;
             let a = dot(u, u);
             let b = 2 * dot(u, v);
-            let c = dot(v, v);
+            let c = dot(v, v) - 1;
             let delta2 = b * b - 4 * a * c;
             if delta2 < 0 { continue; }
+            //outputBuffer.segments[x + y * u32(uniforms.screenWidth)].color = vec3f(1, 0, 0); continue;
             let delta = sqrt(delta2);
-            let root1 = (-b - delta) / (4 * a * c);
-            let root2 = (-b + delta) / (4 * a * c);
+            let root1 = (-b - delta) / (2 * a);
+            let root2 = (-b + delta) / (2 * a);
+            let _p1 = u * root1 + v;
+            let _p2 = u * root2 + v;
+            let p1 = m * vec4f(_p1, 1);
+            let p2 = m * vec4f(_p2, 1);
+            var d1 = p1.z / p1.w;
+            var d2 = p2.z / p2.w;
+            if (d1 > d2) { let _d = d1; d1 = d2; d2 = _d; }
             var tmp: LightPillar;
             tmp.color = data.base.color.xyz;
             tmp.density = data.base.color.w;
-            tmp.depth = root1;
-            tmp.length = root2 - root1;
-            tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
             depth_test(x, y, tmp);
         }
     }

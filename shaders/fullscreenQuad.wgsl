@@ -16,7 +16,7 @@ struct Uniforms {
 };
 
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
-@group(0) @binding(1) var<storage, read> finalColorBuffer : LightPillarBuffer;
+@group(0) @binding(1) var<storage, read> outputBuffer : LightPillarBuffer;
 
 struct VertexOutput {
     @builtin(position) Position: vec4<f32>,
@@ -42,7 +42,7 @@ fn frag_main(@builtin(position) coord: vec4<f32>) -> @location(0) vec4<f32> {
     let X = floor(coord.x);
     let Y = floor(coord.y);
     let index = u32(X + Y * uniforms.screenWidth);
-    let tmp = finalColorBuffer.segments[index];
+    let tmp = outputBuffer.segments[index];
     //let finalColor = vec4<f32>((1 - exp(-tmp.density * tmp.length)) * tmp.color, 1.0);
     let finalColor = vec4f(tmp.color, 1.0);
     return finalColor;

@@ -13,8 +13,8 @@ async function init() {
     const device = await adapter.requestDevice();
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
     const context = canvas.getContext("webgpu") as GPUCanvasContext;
-    canvas.width = window.innerWidth * 0.9;
-    canvas.height = window.innerHeight * 0.9;
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
 
     const devicePixelRatio = window.devicePixelRatio || 1;
     const presentationSize = [
@@ -175,7 +175,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const addRasterizerPass = (commandEncoder: GPUCommandEncoder) => {
 
         const mvp = cameraCtrl.getMVP()
-
+        console.log(mvp, [WIDTH, HEIGHT])
+        
         device.queue.writeBuffer(UBOBuffer, 0, new Float32Array([WIDTH, HEIGHT]).buffer)
         device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([1, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
@@ -240,19 +241,21 @@ class CameraWander extends CameraControl {
         super()
         const aspect = WIDTH / HEIGHT
         this.projectionMatrix = mat4.create()
-        mat4.perspective(this.projectionMatrix, 0.4 * Math.PI, aspect, 1, 100.0)
+        mat4.perspective(this.projectionMatrix, 0.5 * Math.PI, aspect, 0.01, 100.0)
         this.distance = 10
         this.intersect = vec3.fromValues(0, 0, 0)
         this.rotate = vec3.fromValues(0, 0, 0)
         let mouseDownDirection = <boolean | undefined>undefined
         let _this = this
         document.onmousedown = function (event: MouseEvent) {
-            const q = quat.create()
-            quat.fromEuler(q, _this.rotate[1], _this.rotate[0], _this.rotate[2])
-            const m_up = vec3.create()
-            vec3.transformQuat(m_up, vec3.fromValues(0, 1, 0), q)
-            const up_dot_y = vec3.dot(m_up, vec3.fromValues(0, 1, 0))
-            mouseDownDirection = up_dot_y > 0
+            if (event.buttons & (1 ^ 4)) {
+                const q = quat.create()
+                quat.fromEuler(q, _this.rotate[1], _this.rotate[0], _this.rotate[2])
+                const m_up = vec3.create()
+                vec3.transformQuat(m_up, vec3.fromValues(0, 1, 0), q)
+                const up_dot_y = vec3.dot(m_up, vec3.fromValues(0, 1, 0))
+                mouseDownDirection = up_dot_y > 0
+            }
         }
         document.onmousemove = function (event: MouseEvent) {
             if (event.buttons & 1 && mouseDownDirection !== undefined) {
@@ -261,6 +264,24 @@ class CameraWander extends CameraControl {
                 let ay = -0.2
                 let ax = mouseDownDirection ? -0.2 : 0.2
                 vec3.add(_this.rotate, _this.rotate, vec3.fromValues(dx * ax, dy * ay, 0))
+            }
+            if (event.buttons & 4) {
+                let dx = event.movementX
+                let dy = event.movementY
+                let ay = -0.05
+                let ax = _this.distance > 0 ? -0.05 : 0.05
+                const q = quat.create()
+                quat.fromEuler(q, _this.rotate[1], _this.rotate[0], _this.rotate[2])
+                let dir_z = vec3.create()
+                vec3.transformQuat(dir_z, vec3.fromValues(0, 0, -_this.distance), q)
+                let dir_y = vec3.create()
+                vec3.transformQuat(dir_y, vec3.fromValues(0, 1, 0), q)
+                let dir_x = vec3.create()
+                vec3.cross(dir_x, dir_y, dir_z)
+                vec3.normalize(dir_x, dir_x) 
+                vec3.normalize(dir_y, dir_y) 
+                vec3.scaleAndAdd(_this.intersect, _this.intersect, dir_x, dx * ax)
+                vec3.scaleAndAdd(_this.intersect, _this.intersect, dir_y, dy * ay)
             }
         }
         document.onmouseup = function (event: MouseEvent) {
