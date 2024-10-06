@@ -14,13 +14,25 @@ export async function loadModel() {
 	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0],
 	// 		color_params: [1.0, 0, 0],
 	// 		density_params: 1.0,
-	// 	}
+	// 	},
+	// 	"strokeNo.2": {
+	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -2, 0, 0],
+	// 		color_params: [0, 1.0, 0],
+	// 		density_params: 1.0,
+	// 	},
+	// 	// "strokeNo.3": {
+	// 	// 	shape_params: [0.5, 1.0, 0.7, 0.1, 0.5, -0.2, 0.1, -0.5, 0.33],
+	// 	// 	color_params: [0, 0, 1.0],
+	// 	// 	density_params: 1.0,
+	// 	// },
 	// }
+
 
 	for (let o of Object.values(modelData.stroke_params)) {
 		let ps = o.shape_params;
 		let m = mat4.create();
 		let s = vec3.fromValues(ps[0], ps[1], ps[2]);
+		vec3.scale(s, s, 1)
 		let q = quat.create();
 		quat.fromEuler(q, ps[3] * 180 / Math.PI, ps[4] * 180 / Math.PI, ps[5] * 180 / Math.PI);
 		let t = vec3.fromValues(ps[6], ps[7], ps[8]);

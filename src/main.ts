@@ -18,8 +18,8 @@ async function init() {
 
     const devicePixelRatio = window.devicePixelRatio || 1;
     const presentationSize = [
-        Math.floor(canvas.clientWidth * devicePixelRatio),
-        Math.floor(canvas.clientHeight * devicePixelRatio),
+        Math.floor(canvas.clientWidth /* * devicePixelRatio */),
+        Math.floor(canvas.clientHeight /* * devicePixelRatio */),
     ];
 
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -139,7 +139,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
 
     const UBOBufferSize =
         4 + 4 + 4 + 4 + // screenWidth, screenHeight, strokeType, layerCount
-        4 * 16          // MVP
+        4 * 16 +        // MVP
+        4 * 16          // MV
     const UBOBuffer = device.createBuffer({ size: UBOBufferSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST })
 
     const bindGroupLayout = device.createBindGroupLayout({
@@ -175,11 +176,13 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const addRasterizerPass = (commandEncoder: GPUCommandEncoder) => {
 
         const mvp = cameraCtrl.getMVP()
-        console.log(mvp, [WIDTH, HEIGHT])
+        const mv = cameraCtrl.getMV()
+        //console.log(mvp, [WIDTH, HEIGHT])
         
         device.queue.writeBuffer(UBOBuffer, 0, new Float32Array([WIDTH, HEIGHT]).buffer)
         device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([1, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
+        device.queue.writeBuffer(UBOBuffer, 80, (mv as Float32Array).buffer)
 
         const cmd = commandEncoder.beginComputePass()
         let totalTimesToRun = Math.ceil((WIDTH * HEIGHT) / 256)
@@ -200,6 +203,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
 
 abstract class CameraControl {
     abstract getMVP(): mat4;
+    abstract getMV(): mat4;
 }
 
 class CameraSpin extends CameraControl {
@@ -228,6 +232,10 @@ class CameraSpin extends CameraControl {
         mat4.multiply(modelViewProjectionMatrix, this.projectionMatrix, modelViewProjectionMatrix)
         return modelViewProjectionMatrix
     }
+
+    getMV() {
+        throw new Error("Not Impl")
+    }
 }
 
 class CameraWander extends CameraControl {
@@ -242,7 +250,7 @@ class CameraWander extends CameraControl {
         const aspect = WIDTH / HEIGHT
         this.projectionMatrix = mat4.create()
         mat4.perspective(this.projectionMatrix, 0.5 * Math.PI, aspect, 0.01, 100.0)
-        this.distance = 10
+        this.distance = 10.5
         this.intersect = vec3.fromValues(0, 0, 0)
         this.rotate = vec3.fromValues(0, 0, 0)
         let mouseDownDirection = <boolean | undefined>undefined
@@ -294,6 +302,12 @@ class CameraWander extends CameraControl {
     }
 
     getMVP(): mat4 {
+        const mvp = <Float32Array>mat4.create()
+        mat4.multiply(mvp, this.projectionMatrix, this.getMV())
+        return mvp
+    }
+
+    getMV(): mat4 {
         const q = quat.create()
         quat.fromEuler(q, this.rotate[1], this.rotate[0], this.rotate[2])
 
@@ -308,9 +322,6 @@ class CameraWander extends CameraControl {
 
         const viewMatrix = mat4.create()
         mat4.lookAt(viewMatrix, m_eye, m_center, m_up)
-        // world = mat4 Identity
-        const mvp = <Float32Array>mat4.create()
-        mat4.multiply(mvp, this.projectionMatrix, viewMatrix)
-        return mvp
+        return viewMatrix
     }
 }

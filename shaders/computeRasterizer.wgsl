@@ -11,11 +11,12 @@ struct LightPillar {    // align(8) size(16)
 struct LightPillarBuffer { segments: array<LightPillar>, };
 struct SpinLockBuffer { cas: array<atomic<u32>>, };
 
-struct UBO {            // align(16) size(80)
+struct UBO {            // align(16) size(144)
     screenWidth: f32,
     screenHeight: f32,
     strokeType: u32,                                // 1
     modelViewProjectionMatrix: mat4x4<f32>,
+    modelViewMatrix: mat4x4<f32>,
 };
 
 // warn: vec3<f32> size 12 but align to 16
@@ -103,7 +104,7 @@ fn depth_test(x: u32, y: u32, l: LightPillar) {
         if own {
             if l.key < outputBuffer.segments[index].key { outputBuffer.segments[index] = l; }
             atomicStore(&spinLockBuffer.cas[index], 0u);
-            break;
+            return;
         }
     }
 }
@@ -138,14 +139,14 @@ fn rasterize_sphere(data: Sphere) {
             _u /= _u.w;
             var _v : vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
             _v /= _v.w;
-            let u : vec3f = _u.xyz;
-            let v : vec3f = (_u - _v).xyz;
+            let u : vec3f = (_u - _v).xyz;
+            let v : vec3f = _v.xyz;
             let a = dot(u, u);
             let b = 2 * dot(u, v);
             let c = dot(v, v) - 1;
             let delta2 = b * b - 4 * a * c;
             if delta2 < 0 { continue; }
-            //outputBuffer.segments[x + y * u32(uniforms.screenWidth)].color = vec3f(1, 0, 0); continue;
+            //outputBuffer.segments[x + y * u32(uniforms.screenWidth)].color = vec3f(delta2 / 1000000); continue;
             let delta = sqrt(delta2);
             let root1 = (-b - delta) / (2 * a);
             let root2 = (-b + delta) / (2 * a);
