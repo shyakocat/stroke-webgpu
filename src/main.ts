@@ -137,6 +137,9 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const casBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT);
     const casBuffer = device.createBuffer({ size: casBufferSize, usage: GPUBufferUsage.STORAGE })
 
+    const argBufferSize = Uint32Array.BYTES_PER_ELEMENT * strokeCount * 5;  // left, top, width, height, 1
+    const argBuffer = device.createBuffer({ size: argBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.INDIRECT})
+
     const UBOBufferSize =
         4 + 4 + 4 + 4 + // screenWidth, screenHeight, strokeType, layerCount
         4 * 16 +        // MVP
@@ -148,7 +151,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
             { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
             { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
             { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
-            { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
+            { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+            { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
         ]
     })
     const bindGroup = device.createBindGroup({
@@ -157,7 +161,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
             { binding: 0, resource: { buffer: outputColorBuffer } },
             { binding: 1, resource: { buffer: casBuffer } },
             { binding: 2, resource: { buffer: strokeBuffer } },
-            { binding: 3, resource: { buffer: UBOBuffer } }
+            { binding: 3, resource: { buffer: argBuffer } },
+            { binding: 4, resource: { buffer: UBOBuffer } },
         ]
     })
 
@@ -185,8 +190,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         device.queue.writeBuffer(UBOBuffer, 80, (mv as Float32Array).buffer)
 
         const cmd = commandEncoder.beginComputePass()
-        let totalTimesToRun = Math.ceil((WIDTH * HEIGHT) / 256)
         // Clear pass
+        let totalTimesToRun = Math.ceil((WIDTH * HEIGHT) / 256)
         cmd.setPipeline(clearPipeline)
         cmd.setBindGroup(0, bindGroup)
         cmd.dispatchWorkgroups(totalTimesToRun)

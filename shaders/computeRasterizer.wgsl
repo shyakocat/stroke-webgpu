@@ -34,10 +34,13 @@ struct Capsule { base: Entity, h: f32, r: f32, };
 
 struct StrokeBuffer { data: array<f32>, };
 
+struct Argument { left: u32, top: u32, width: u32, height: u32, _1: u32 };
+
 @group(0) @binding(0) var<storage, read_write> outputBuffer : LightPillarBuffer;
 @group(0) @binding(1) var<storage, read_write> spinLockBuffer : SpinLockBuffer;
 @group(0) @binding(2) var<storage, read> strokeBuffer : StrokeBuffer;
-@group(0) @binding(3) var<uniform> uniforms : UBO;
+@group(0) @binding(3) var<storage, read_write> argBuffer: array<Argument>;
+@group(0) @binding(4) var<uniform> uniforms : UBO;
 
 fn project(v: vec3<f32>) -> vec3<f32> {
     var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(v, 1.0);
