@@ -1,3 +1,5 @@
+const SAMPLE_COUNT_PER_PIXEL = 4;
+
 struct LightPillar {
     key: f32,
     depth: f32,
@@ -7,7 +9,7 @@ struct LightPillar {
 };
 
 struct LightPillarBuffer {
-    segments: array<LightPillar>,
+    segments: array<array<LightPillar, SAMPLE_COUNT_PER_PIXEL>>,
 };
 
 struct Uniforms {
@@ -42,7 +44,7 @@ fn frag_main(@builtin(position) coord: vec4<f32>) -> @location(0) vec4<f32> {
     let X = floor(coord.x);
     let Y = floor(coord.y);
     let index = u32(X + Y * uniforms.screenWidth);
-    let tmp = outputBuffer.segments[index];
+    let tmp = outputBuffer.segments[index][0];
     //let finalColor = vec4<f32>((1 - exp(-tmp.density * tmp.length)) * tmp.color, 1.0);
     let finalColor = vec4f(tmp.color, 1.0);
     return finalColor;

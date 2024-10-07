@@ -1,3 +1,4 @@
+const SAMPLE_COUNT_PER_PIXEL = 4;
 const LIGHT_PILLAR_LAMBDA = 1.0f;
 
 struct LightPillar {    // align(8) size(16)
@@ -8,7 +9,7 @@ struct LightPillar {    // align(8) size(16)
     color: vec3<f32>,
 };
 
-struct LightPillarBuffer { segments: array<LightPillar>, };
+struct LightPillarBuffer { segments: array<array<LightPillar, SAMPLE_COUNT_PER_PIXEL>>, };
 struct SpinLockBuffer { cas: array<atomic<u32>>, };
 
 struct UBO {            // align(16) size(144)
@@ -102,7 +103,19 @@ fn depth_test(x: u32, y: u32, l: LightPillar) {
         //own = atomicCompareExchangeWeak(&spinLockBuffer.cas[index], 0u, 1u).exchanged;
         own = true;
         if own {
-            if l.key < outputBuffer.segments[index].key { outputBuffer.segments[index] = l; }
+            if l.key < outputBuffer.segments[index][SAMPLE_COUNT_PER_PIXEL - 1].key {
+                for (var i = SAMPLE_COUNT_PER_PIXEL; i > 0; i--) {
+                    if l.key < outputBuffer.segments[index][i - 1].key {
+                        outputBuffer.segments[index][i] = outputBuffer.segments[index][i - 1];
+                    } else {
+                        outputBuffer.segments[index][i] = l;
+                        break;
+                    }
+                }
+                if l.key < outputBuffer.segments[index][0].key {
+                    outputBuffer.segments[index][0] = l;
+                }
+            }
             atomicStore(&spinLockBuffer.cas[index], 0u);
             return;
         }
@@ -135,12 +148,12 @@ fn rasterize_sphere(data: Sphere) {
     for (var x: u32 = startX; x <= endX; x = x + 1u) {
         for (var y: u32 = startY; y <= endY; y = y + 1u) {
             //outputBuffer.segments[x + y * u32(uniforms.screenWidth)].color = vec3f(1, 0, 0); continue;
-            var _u : vec4f = m_inv * vec4<f32>(f32(x) / uniforms.screenWidth * 2f - 1f, f32(y) / uniforms.screenHeight * 2f - 1f, 1, 1);
+            var _u: vec4f = m_inv * vec4<f32>(f32(x) / uniforms.screenWidth * 2f - 1f, f32(y) / uniforms.screenHeight * 2f - 1f, 1, 1);
             _u /= _u.w;
-            var _v : vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
             _v /= _v.w;
-            let u : vec3f = (_u - _v).xyz;
-            let v : vec3f = _v.xyz;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
             let a = dot(u, u);
             let b = 2 * dot(u, v);
             let c = dot(v, v) - 1;
@@ -156,7 +169,7 @@ fn rasterize_sphere(data: Sphere) {
             let p2 = m * vec4f(_p2, 1);
             var d1 = p1.z / p1.w;
             var d2 = p2.z / p2.w;
-            if (d1 > d2) { let _d = d1; d1 = d2; d2 = _d; }
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
             var tmp: LightPillar;
             tmp.color = data.base.color.xyz;
             tmp.density = data.base.color.w;
@@ -173,11 +186,13 @@ fn rasterize_sphere(data: Sphere) {
 fn clear(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let index = global_id.x;
     atomicStore(&spinLockBuffer.cas[index], 0u);
-    outputBuffer.segments[index].key = 1e7f;
-    outputBuffer.segments[index].density = 0.0f;
-    outputBuffer.segments[index].color = vec3f(0.0f, 0.0f, 0.0f);
-    outputBuffer.segments[index].depth = 1.1e2f;
-    outputBuffer.segments[index].length = 0.0f;
+    for (var i = 0; i < SAMPLE_COUNT_PER_PIXEL; i++) {
+        outputBuffer.segments[index][i].key = 1e7f;
+        outputBuffer.segments[index][i].density = 0.0f;
+        outputBuffer.segments[index][i].color = vec3f(0.0f, 0.0f, 0.0f);
+        outputBuffer.segments[index][i].depth = 1.1e2f;
+        outputBuffer.segments[index][i].length = 0.0f;
+    }
 }
 
 @compute @workgroup_size(256, 1)

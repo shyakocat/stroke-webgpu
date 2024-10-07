@@ -131,7 +131,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     new Float32Array(strokeBuffer.getMappedRange()).set(strokeData);
     strokeBuffer.unmap();
 
-    const outputColorBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT) * COLOR_CHANNELS;
+    const SAMPLE_COUNT_PER_PIXEL = 4;
+    const outputColorBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT) * COLOR_CHANNELS * SAMPLE_COUNT_PER_PIXEL;
     const outputColorBuffer = device.createBuffer({ size: outputColorBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
 
     const casBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT);
