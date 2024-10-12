@@ -1,60 +1,40 @@
-const LIGHT_PILLAR_LAMBDA = 1.0f;
+const TILE_WIDTH = 16;
+const TILE_HEIGHT = 16;
+const STROKE_MAX_COUNT = 512;
 
-struct LightPillar {    // align(8) size(16)
-    key: f32,           // density * exp(-lambda * depth)
+struct LightPillar {
+    key: f32,
     depth: f32,
     length: f32,
     density: f32,
     color: vec3<f32>,
 };
 
-struct LightPillarBuffer { segments: array<LightPillar>, };
-struct SpinLockBuffer { cas: array<atomic<u32>>, };
-
-struct UBO {            // align(16) size(144)
-    screenWidth: f32,
-    screenHeight: f32,
-    strokeType: u32,                                // 1
-    modelViewProjectionMatrix: mat4x4<f32>,
-    modelViewMatrix: mat4x4<f32>,
-};
-
 // warn: vec3<f32> size 12 but align to 16
 // density => color.w
-struct Entity { transform: mat4x4<f32>, color: vec4<f32>, };    
-
-struct Triangle { verts: array<vec3<f32>, 3>, };
+struct Entity { transform: mat4x4<f32>, color: vec4<f32>, };
 struct Sphere { base: Entity, };                    // Support
-struct Cube { base: Entity, };
-struct Tetrahedron { base: Entity, };
-struct Octahedron { base: Entity, };
-struct RoundCube { base: Entity, r: f32, };
-struct Triprism { base: Entity, h: f32, };
-struct Capsule { base: Entity, h: f32, r: f32, };
+
+struct UBO {            // align(16) size(96)
+    screenWidth: u32,
+    screenHeight: u32,
+    strokeType: u32,                                // 1
+    strokeCount: u32,
+    modelViewProjectionMatrix: mat4x4<f32>,
+    viewMatrix: mat4x4<f32>,
+};
 
 struct StrokeBuffer { data: array<f32>, };
+struct BinBuffer { id: array<u32>, };
+struct BinSizeBuffer { size: array<atomic<u32>>, };
+struct ColorBuffer { pixels: array<vec4f>, };
 
-struct Argument { left: u32, top: u32, width: u32, height: u32, _1: u32 };
 
-@group(0) @binding(0) var<storage, read_write> outputBuffer : LightPillarBuffer;
-@group(0) @binding(1) var<storage, read_write> spinLockBuffer : SpinLockBuffer;
+@group(0) @binding(0) var<storage, read_write> binSizeBuffer : BinSizeBuffer;
+@group(0) @binding(1) var<storage, read_write> binBuffer : BinBuffer;
 @group(0) @binding(2) var<storage, read> strokeBuffer : StrokeBuffer;
-@group(0) @binding(3) var<storage, read_write> argBuffer: array<Argument>;
+@group(0) @binding(3) var<storage, read_write> outputBuffer : ColorBuffer;
 @group(0) @binding(4) var<uniform> uniforms : UBO;
-
-fn project(v: vec3<f32>) -> vec3<f32> {
-    var screenPos = uniforms.modelViewProjectionMatrix * vec4<f32>(v, 1.0);
-    screenPos.x = (screenPos.x / screenPos.w * 0.5 + 0.5) * uniforms.screenWidth;
-    screenPos.y = (screenPos.y / screenPos.w * 0.5 + 0.5) * uniforms.screenHeight;
-    return vec3<f32>(screenPos.x, screenPos.y, screenPos.z / screenPos.w);
-}
-
-fn is_off_screen(v: vec3<f32>) -> bool {
-    if v.x < 0.0 || v.x > uniforms.screenWidth || v.y < 0.0 || v.y > uniforms.screenHeight {
-        return true;
-    }
-    return false;
-}
 
 fn inverse(m: mat4x4f) -> mat4x4f {
     let a00 = m[0][0]; let a01 = m[0][1]; let a02 = m[0][2]; let a03 = m[0][3];
@@ -97,95 +77,30 @@ fn inverse(m: mat4x4f) -> mat4x4f {
     ) * (1 / det);
 }
 
-fn depth_test(x: u32, y: u32, l: LightPillar) {
-    let index = u32(x + y * u32(uniforms.screenWidth));
-    // 用自旋锁来保证深度写入不冲突
-    var own: bool;
-    loop {
-        //own = atomicCompareExchangeWeak(&spinLockBuffer.cas[index], 0u, 1u).exchanged;
-        own = true;
-        if own {
-            if l.key < outputBuffer.segments[index].key { outputBuffer.segments[index] = l; }
-            atomicStore(&spinLockBuffer.cas[index], 0u);
-            return;
-        }
-    }
-}
-
-fn rasterize_sphere(data: Sphere) {
-    // m是从单位球变换到裁剪空间
-    let m = uniforms.modelViewProjectionMatrix * data.base.transform;
-    let m_inv = inverse(m);
-    // 从单位球的包围立方体来估算光栅化范围
-    var cube = array<vec3<f32>, 8>(
-        vec3<f32>(-1.0f, -1.0f, -1.0f), vec3<f32>(-1.0f, -1.0f, 1.0f),
-        vec3<f32>(-1.0f, 1.0f, -1.0f), vec3<f32>(-1.0f, 1.0f, 1.0f),
-        vec3<f32>(1.0f, -1.0f, -1.0f), vec3<f32>(1.0f, -1.0f, 1.0f),
-        vec3<f32>(1.0f, 1.0f, -1.0f), vec3<f32>(1.0f, 1.0f, 1.0f)
-    );
-    for (var i = 0u; i < 8u; i++) { cube[i] = project((data.base.transform * vec4f(cube[i], 1.0f)).xyz); }
-    var cube_min: vec3<f32> = cube[0];
-    var cube_max: vec3<f32> = cube[0];
-    for (var i = 1u; i < 8u; i++) {
-        cube_min = min(cube_min, cube[i]);
-        cube_max = max(cube_max, cube[i]);
-    }
-    let startX = u32(clamp(cube_min.x, 0.0f, uniforms.screenWidth - 1e-3));
-    let startY = u32(clamp(cube_min.y, 0.0f, uniforms.screenHeight - 1e-3));
-    let endX = u32(clamp(cube_max.x, 0.0f, uniforms.screenWidth - 1e-3));
-    let endY = u32(clamp(cube_max.y, 0.0f, uniforms.screenHeight - 1e-3));
-    // 通过列一元二次方程，求解。设交点p，则p = u * t + v，列出|p| = 1解得t。
-    for (var x: u32 = startX; x <= endX; x = x + 1u) {
-        for (var y: u32 = startY; y <= endY; y = y + 1u) {
-            //outputBuffer.segments[x + y * u32(uniforms.screenWidth)].color = vec3f(1, 0, 0); continue;
-            var _u : vec4f = m_inv * vec4<f32>(f32(x) / uniforms.screenWidth * 2f - 1f, f32(y) / uniforms.screenHeight * 2f - 1f, 1, 1);
-            _u /= _u.w;
-            var _v : vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
-            _v /= _v.w;
-            let u : vec3f = (_u - _v).xyz;
-            let v : vec3f = _v.xyz;
-            let a = dot(u, u);
-            let b = 2 * dot(u, v);
-            let c = dot(v, v) - 1;
-            let delta2 = b * b - 4 * a * c;
-            if delta2 < 0 { continue; }
-            //outputBuffer.segments[x + y * u32(uniforms.screenWidth)].color = vec3f(delta2 / 1000000); continue;
-            let delta = sqrt(delta2);
-            let root1 = (-b - delta) / (2 * a);
-            let root2 = (-b + delta) / (2 * a);
-            let _p1 = u * root1 + v;
-            let _p2 = u * root2 + v;
-            let p1 = m * vec4f(_p1, 1);
-            let p2 = m * vec4f(_p2, 1);
-            var d1 = p1.z / p1.w;
-            var d2 = p2.z / p2.w;
-            if (d1 > d2) { let _d = d1; d1 = d2; d2 = _d; }
-            var tmp: LightPillar;
-            tmp.color = data.base.color.xyz;
-            tmp.density = data.base.color.w;
-            tmp.depth = d1;
-            tmp.length = d2 - d1;
-            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
-            tmp.key = tmp.depth;
-            depth_test(x, y, tmp);
-        }
-    }
-}
-
-@compute @workgroup_size(256, 1)
+@compute @workgroup_size(16, 16)
 fn clear(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let index = global_id.x;
-    atomicStore(&spinLockBuffer.cas[index], 0u);
-    outputBuffer.segments[index].key = 1e7f;
-    outputBuffer.segments[index].density = 0.0f;
-    outputBuffer.segments[index].color = vec3f(0.0f, 0.0f, 0.0f);
-    outputBuffer.segments[index].depth = 1.1e2f;
-    outputBuffer.segments[index].length = 0.0f;
+    // global_id.x is pixel x
+    // global_id.y is pixel y
+    if global_id.x > uniforms.screenWidth || global_id.y > uniforms.screenHeight { return; }
+    let index = global_id.x + global_id.y * uniforms.screenWidth;
+    let TILE_COUNT_X = (uniforms.screenWidth - 1) / TILE_WIDTH + 1;
+    let TILE_COUNT_Y = (uniforms.screenHeight - 1) / TILE_HEIGHT + 1;
+    if index < TILE_COUNT_X * TILE_COUNT_Y {
+        atomicStore(&binSizeBuffer.size[index], 0);
+    }
+    outputBuffer.pixels[index] = vec4f(0);
 }
 
-@compute @workgroup_size(256, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if uniforms.strokeType == 1 {   // Ellipsoid
+@compute @workgroup_size(256, 1, 1)
+fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    // global_id.x is primitive id
+    // global_id.y is tile width id
+    // global_id.z is tile height id
+    if global_id.x >= uniforms.strokeCount { return; }
+    let TILE_COUNT_X = (uniforms.screenWidth - 1) / TILE_WIDTH + 1;
+    let TILE_COUNT_Y = (uniforms.screenHeight - 1) / TILE_HEIGHT + 1;
+    if uniforms.strokeType == 1 {   
+        // Ellipsoid
         let index = global_id.x * 20u;
         var data: Sphere;
         data.base.transform = mat4x4<f32>(
@@ -195,6 +110,120 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             strokeBuffer.data[index + 12u], strokeBuffer.data[index + 13u], strokeBuffer.data[index + 14u], strokeBuffer.data[index + 15u]
         );
         data.base.color = vec4<f32>(strokeBuffer.data[index + 16u], strokeBuffer.data[index + 17u], strokeBuffer.data[index + 18u], strokeBuffer.data[index + 19u]);
-        rasterize_sphere(data);
+        // 直接判椭球太难，可以判椭球的包围盒
+        let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+        var cube = array<vec3<f32>, 8>(
+            vec3<f32>(-1.0f, -1.0f, -1.0f), vec3<f32>(-1.0f, -1.0f, 1.0f),
+            vec3<f32>(-1.0f, 1.0f, -1.0f), vec3<f32>(-1.0f, 1.0f, 1.0f),
+            vec3<f32>(1.0f, -1.0f, -1.0f), vec3<f32>(1.0f, -1.0f, 1.0f),
+            vec3<f32>(1.0f, 1.0f, -1.0f), vec3<f32>(1.0f, 1.0f, 1.0f)
+        );
+        for (var i = 0u; i < 8u; i++) {
+            let screenPos = uniforms.modelViewProjectionMatrix * data.base.transform * vec4f(cube[i], 1.0f);
+            cube[i] = vec3f(
+                (screenPos.x / screenPos.w * 0.5 + 0.5) * f32(uniforms.screenWidth),
+                (screenPos.y / screenPos.w * 0.5 + 0.5) * f32(uniforms.screenHeight),
+                screenPos.z / screenPos.w
+            );
+        }
+        var cube_min: vec3<f32> = cube[0];
+        var cube_max: vec3<f32> = cube[0];
+        for (var i = 1u; i < 8u; i++) {
+            cube_min = min(cube_min, cube[i]);
+            cube_max = max(cube_max, cube[i]);
+        }
+        let tile_lt = vec2<u32>(global_id.y * TILE_WIDTH, global_id.z * TILE_HEIGHT);
+        let tile_rb = vec2<u32>(global_id.y * TILE_WIDTH + TILE_WIDTH, global_id.z * TILE_HEIGHT + TILE_HEIGHT);
+        if !(cube_min.x > f32(tile_rb.x) || cube_min.y > f32(tile_rb.y) || cube_max.x < f32(tile_lt.x) || cube_max.y < f32(tile_lt.y)) {
+            let index = global_id.y + global_id.z * TILE_COUNT_X;
+            let indexBias = uniforms.strokeCount * index;
+            binBuffer.id[indexBias + atomicAdd(&binSizeBuffer.size[index], 1)] = global_id.x;
+        }
     }
+}
+
+
+// const SHARED_COUNT = 512;
+// var<workgroup> listData : array<Sphere, SHARED_COUNT>;  // I'm RTX3060 Laptop, shared memory 48K, smaller is ok
+
+// 16x16 pixels per tile
+@compute @workgroup_size(1, 1, 16)
+fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    // global_id.x is tile width id
+    // global_id.y is tile height id
+    // global_id.z is pixel id
+    let TILE_COUNT_X = (uniforms.screenWidth - 1) / TILE_WIDTH + 1;
+    let TILE_COUNT_Y = (uniforms.screenHeight - 1) / TILE_HEIGHT + 1;
+    let tileId = global_id.x + global_id.y * TILE_COUNT_X;
+    let indexBias = uniforms.strokeCount * tileId;
+    let listCount = atomicLoad(&binSizeBuffer.size[tileId]);
+    if listCount == 0 { return; }
+    // // load to shared memory
+    // for (let i = global_id.y * 16 + global_id.z; i < listCount; i += 256) {
+    //     listData[i] = strokeBuffer.data[binBuffer.id[indexBias + i] ];
+    // }
+    // workgroupBarrier();
+    // // per pixel calculate intersection, sort, α-blending
+    var frags: array<LightPillar, STROKE_MAX_COUNT>;
+    var frags_id: array<u32, STROKE_MAX_COUNT>;
+    let pixelX = global_id.x * 16 + (global_id.z / TILE_WIDTH);
+    let pixelY = global_id.y * 16 + (global_id.z % TILE_HEIGHT);
+    let pixelId = pixelX + pixelY * uniforms.screenWidth;
+    if pixelX > uniforms.screenWidth || pixelY > uniforms.screenHeight { return; }
+    //outputBuffer.pixels[pixelId] = vec4f(f32(listCount) / f32(uniforms.strokeCount), 0, 0, 1); return;
+    for (var i: u32 = 0; i < listCount; i++) {
+        let index = binBuffer.id[indexBias + i] * 20u;
+        var data: Sphere;
+        data.base.transform = mat4x4<f32>(
+            strokeBuffer.data[index + 0u], strokeBuffer.data[index + 1u], strokeBuffer.data[index + 2u], strokeBuffer.data[index + 3u],
+            strokeBuffer.data[index + 4u], strokeBuffer.data[index + 5u], strokeBuffer.data[index + 6u], strokeBuffer.data[index + 7u],
+            strokeBuffer.data[index + 8u], strokeBuffer.data[index + 9u], strokeBuffer.data[index + 10u], strokeBuffer.data[index + 11u],
+            strokeBuffer.data[index + 12u], strokeBuffer.data[index + 13u], strokeBuffer.data[index + 14u], strokeBuffer.data[index + 15u]
+        );
+        data.base.color = vec4<f32>(strokeBuffer.data[index + 16u], strokeBuffer.data[index + 17u], strokeBuffer.data[index + 18u], strokeBuffer.data[index + 19u]);
+        let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+        let m_inv = inverse(m);
+        var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+        _u /= _u.w;
+        var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+        _v /= _v.w;
+        let u: vec3f = (_u - _v).xyz;
+        let v: vec3f = _v.xyz;
+        let a = dot(u, u);
+        let b = 2 * dot(u, v);
+        let c = dot(v, v) - 1;
+        let delta2 = b * b - 4 * a * c;
+        if delta2 < 0 { frags[i].key = 1e7; continue; }
+        let delta = sqrt(delta2);
+        let root1 = (-b - delta) / (2 * a);
+        let root2 = (-b + delta) / (2 * a);
+        let _p1 = u * root1 + v;
+        let _p2 = u * root2 + v;
+        let p1 = m * vec4f(_p1, 1);
+        let p2 = m * vec4f(_p2, 1);
+        var d1 = p1.z / p1.w;
+        var d2 = p2.z / p2.w;
+        if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+        var tmp: LightPillar;
+        tmp.color = data.base.color.xyz;
+        tmp.density = data.base.color.w;
+        tmp.depth = d1;
+        tmp.length = d2 - d1;
+        //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+        tmp.key = tmp.depth;
+        frags[i] = tmp;
+    }
+    for (var i: u32 = 0; i < listCount; i++) {
+        frags_id[i] = i;
+    }
+    for (var i: u32 = 0; i < listCount; i++) {
+        for (var j = i + 1; j < listCount; j++) {
+            if frags[frags_id[j] ].key < frags[frags_id[i] ].key {
+                var t = frags_id[i];
+                frags_id[i] = frags_id[j];
+                frags_id[j] = t;
+            }
+        }
+    }
+    outputBuffer.pixels[pixelId] = vec4f(frags[frags_id[0] ].color, 1.0f);
 }

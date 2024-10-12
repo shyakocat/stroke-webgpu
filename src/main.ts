@@ -31,8 +31,8 @@ async function init() {
 
     const strokeData: Float32Array = await loadModel();
 
-    const { addRasterizerPass, outputColorBuffer } = createRasterizerPass(device, presentationSize, strokeData);
-    const { addFullscreenPass } = createFullscreenPass(device, presentationSize, presentationFormat, outputColorBuffer);
+    const { addRasterizerPass, outputBuffer } = createRasterizerPass(device, presentationSize, strokeData);
+    const { addFullscreenPass } = createFullscreenPass(device, presentationSize, presentationFormat, outputBuffer);
 
     var stats = new Stats();
     stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -78,10 +78,7 @@ function createFullscreenPass(device: GPUDevice, presentationSize: number[], pre
     })
 
     const uniformBufferSize = 4 * 2;    // screenWidth, screenHeight
-    const uniformBuffer = device.createBuffer({
-        size: uniformBufferSize,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    })
+    const uniformBuffer = device.createBuffer({ size: uniformBufferSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST })
 
     const fullscreenQuadBindGroup = device.createBindGroup({
         layout: fullscreenQuadBindGroupLayout,
@@ -118,27 +115,23 @@ function createFullscreenPass(device: GPUDevice, presentationSize: number[], pre
 
 function createRasterizerPass(device: GPUDevice, presentationSize: number[], strokeData: Float32Array) {
     const [WIDTH, HEIGHT] = presentationSize
-    const COLOR_CHANNELS = 7 + 1            // LightPillar
+    const [TILE_COUNT_X, TILE_COUNT_Y] = [Math.ceil(WIDTH / 16), Math.ceil(HEIGHT / 16)]
 
     // const NUMBER_PRE_ELEMENT = 3 * 4     // triangle, 3 vertex, (3 + 1) f32 per vertex
     const NUMBER_PRE_ELEMENT = 20           // transform 4x4 f32, color 3 f32, density 1 f32
     const strokeCount = strokeData.length / NUMBER_PRE_ELEMENT
-    const strokeBuffer = device.createBuffer({
-        size: strokeData.byteLength,
-        usage: GPUBufferUsage.STORAGE,
-        mappedAtCreation: true,
-    })
+    const strokeBuffer = device.createBuffer({ size: strokeData.byteLength, usage: GPUBufferUsage.STORAGE, mappedAtCreation: true, })
     new Float32Array(strokeBuffer.getMappedRange()).set(strokeData);
     strokeBuffer.unmap();
 
-    const outputColorBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT) * COLOR_CHANNELS;
-    const outputColorBuffer = device.createBuffer({ size: outputColorBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
+    const outputBufferSize = Float32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT) * 4;
+    const outputBuffer = device.createBuffer({ size: outputBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
 
-    const casBufferSize = Uint32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT);
-    const casBuffer = device.createBuffer({ size: casBufferSize, usage: GPUBufferUsage.STORAGE })
+    const binBufferSize = Uint32Array.BYTES_PER_ELEMENT * (TILE_COUNT_X * TILE_COUNT_Y) * 512;
+    const binBuffer = device.createBuffer({ size: binBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
 
-    const argBufferSize = Uint32Array.BYTES_PER_ELEMENT * strokeCount * 5;  // left, top, width, height, 1
-    const argBuffer = device.createBuffer({ size: argBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.INDIRECT})
+    const binSizeBufferSize = Uint32Array.BYTES_PER_ELEMENT * (TILE_COUNT_X * TILE_COUNT_Y);
+    const binSizeBuffer = device.createBuffer({ size: binSizeBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
 
     const UBOBufferSize =
         4 + 4 + 4 + 4 + // screenWidth, screenHeight, strokeType, layerCount
@@ -158,22 +151,26 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const bindGroup = device.createBindGroup({
         layout: bindGroupLayout,
         entries: [
-            { binding: 0, resource: { buffer: outputColorBuffer } },
-            { binding: 1, resource: { buffer: casBuffer } },
+            { binding: 0, resource: { buffer: binSizeBuffer } },
+            { binding: 1, resource: { buffer: binBuffer } },
             { binding: 2, resource: { buffer: strokeBuffer } },
-            { binding: 3, resource: { buffer: argBuffer } },
+            { binding: 3, resource: { buffer: outputBuffer } },
             { binding: 4, resource: { buffer: UBOBuffer } },
         ]
     })
 
     const computeRasterizerModule = device.createShaderModule({ code: computeRasterizerWGSL })
-    const rasterizerPipeline = device.createComputePipeline({
-        layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
-        compute: { module: computeRasterizerModule, entryPoint: "main" }
-    })
     const clearPipeline = device.createComputePipeline({
         layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
         compute: { module: computeRasterizerModule, entryPoint: "clear" }
+    })
+    const tilePipeline = device.createComputePipeline({
+        layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+        compute: { module: computeRasterizerModule, entryPoint: "tile" }
+    })
+    const rasterizerPipeline = device.createComputePipeline({
+        layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+        compute: { module: computeRasterizerModule, entryPoint: "rasterize_sphere" }
     })
 
     const cameraCtrl: CameraControl = new CameraWander(WIDTH, HEIGHT)
@@ -184,26 +181,29 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         const mv = cameraCtrl.getMV()
         //console.log(mvp, [WIDTH, HEIGHT])
         
-        device.queue.writeBuffer(UBOBuffer, 0, new Float32Array([WIDTH, HEIGHT]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 0, new Uint32Array([WIDTH, HEIGHT]).buffer)
         device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([1, ]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 12, new Uint32Array([strokeCount, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
         device.queue.writeBuffer(UBOBuffer, 80, (mv as Float32Array).buffer)
 
         const cmd = commandEncoder.beginComputePass()
         // Clear pass
-        let totalTimesToRun = Math.ceil((WIDTH * HEIGHT) / 256)
         cmd.setPipeline(clearPipeline)
         cmd.setBindGroup(0, bindGroup)
-        cmd.dispatchWorkgroups(totalTimesToRun)
+        cmd.dispatchWorkgroups(Math.ceil(WIDTH / 16), Math.ceil(HEIGHT / 16))
+        // Tile pass
+        cmd.setPipeline(tilePipeline)
+        cmd.setBindGroup(0, bindGroup)
+        cmd.dispatchWorkgroups(Math.ceil(strokeCount / 256), TILE_COUNT_X, TILE_COUNT_Y)
         // Rasterizer pass
-        totalTimesToRun = Math.ceil((strokeCount) / 256)
         cmd.setPipeline(rasterizerPipeline)
         cmd.setBindGroup(0, bindGroup)
-        cmd.dispatchWorkgroups(totalTimesToRun)
+        cmd.dispatchWorkgroups(TILE_COUNT_X, TILE_COUNT_Y, 16)
         cmd.end()
     }
 
-    return { addRasterizerPass, outputColorBuffer }
+    return { addRasterizerPass, outputBuffer }
 }
 
 abstract class CameraControl {
