@@ -20,8 +20,13 @@ export async function loadModel() {
 	// 		color_params: [0, 1.0, 0],
 	// 		density_params: 1.0,
 	// 	},
-	// 	// "strokeNo.3": {
-	// 	// 	shape_params: [0.5, 1.0, 0.7, 0.1, 0.5, -0.2, 0.1, -0.5, 0.33],
+	// 	"strokeNo.3": {
+	// 		shape_params: [0.5, 1.0, 0.7, 0.1, 0.5, -0.2, 0.1, -0.5, 0.33],
+	// 		color_params: [0, 0, 1.0],
+	// 		density_params: 1.0,
+	// 	},
+	// 	// "strokeNo.4": {
+	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -4, 0, 0],
 	// 	// 	color_params: [0, 0, 1.0],
 	// 	// 	density_params: 1.0,
 	// 	// },

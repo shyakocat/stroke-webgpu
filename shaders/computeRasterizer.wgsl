@@ -1,6 +1,7 @@
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;
 const STROKE_MAX_COUNT = 512;
+const DENSITY_SCALE = 20;
 
 struct LightPillar {
     key: f32,
@@ -21,7 +22,7 @@ struct UBO {            // align(16) size(96)
     strokeType: u32,                                // 1
     strokeCount: u32,
     modelViewProjectionMatrix: mat4x4<f32>,
-    viewMatrix: mat4x4<f32>,
+    modelViewMatrix: mat4x4<f32>,
 };
 
 struct StrokeBuffer { data: array<f32>, };
@@ -171,6 +172,7 @@ fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixelId = pixelX + pixelY * uniforms.screenWidth;
     if pixelX > uniforms.screenWidth || pixelY > uniforms.screenHeight { return; }
     //outputBuffer.pixels[pixelId] = vec4f(f32(listCount) / f32(uniforms.strokeCount), 0, 0, 1); return;
+    var fragCount: u32 = 0;
     for (var i: u32 = 0; i < listCount; i++) {
         let index = binBuffer.id[indexBias + i] * 20u;
         var data: Sphere;
@@ -193,16 +195,16 @@ fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let b = 2 * dot(u, v);
         let c = dot(v, v) - 1;
         let delta2 = b * b - 4 * a * c;
-        if delta2 < 0 { frags[i].key = 1e7; continue; }
+        if delta2 < 0 { continue; }
         let delta = sqrt(delta2);
         let root1 = (-b - delta) / (2 * a);
         let root2 = (-b + delta) / (2 * a);
         let _p1 = u * root1 + v;
         let _p2 = u * root2 + v;
-        let p1 = m * vec4f(_p1, 1);
-        let p2 = m * vec4f(_p2, 1);
-        var d1 = p1.z / p1.w;
-        var d2 = p2.z / p2.w;
+        let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
+        let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+        var d1 = -p1.z / p1.w;
+        var d2 = -p2.z / p2.w;
         if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
         var tmp: LightPillar;
         tmp.color = data.base.color.xyz;
@@ -211,13 +213,15 @@ fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
         tmp.length = d2 - d1;
         //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
         tmp.key = tmp.depth;
-        frags[i] = tmp;
+        frags[fragCount] = tmp;
+        fragCount++;
     }
-    for (var i: u32 = 0; i < listCount; i++) {
+    if fragCount == 0 { return; }
+    for (var i: u32 = 0; i < fragCount; i++) {
         frags_id[i] = i;
     }
-    for (var i: u32 = 0; i < listCount; i++) {
-        for (var j = i + 1; j < listCount; j++) {
+    for (var i: u32 = 0; i < fragCount; i++) {
+        for (var j = i + 1; j < fragCount; j++) {
             if frags[frags_id[j] ].key < frags[frags_id[i] ].key {
                 var t = frags_id[i];
                 frags_id[i] = frags_id[j];
@@ -225,5 +229,22 @@ fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
         }
     }
-    outputBuffer.pixels[pixelId] = vec4f(frags[frags_id[0] ].color, 1.0f);
+    // I(s) = \sum_{n=1}^N    T(n) * (1 - exp(-sigma_n * delta_n)) * c_n    
+    // where T(n) = exp(-\sum_k=1^{n-1}  sigma_k * delta_k)   delta_n = t_{n+1} = t_n
+    var irradiance : vec3f = vec3f(0);
+    var occlusion : f32 = 0;
+    for (var i: u32 = 0; i < fragCount; i++) {
+        let sigma = frags[frags_id[i] ].density * DENSITY_SCALE;
+        let delta = frags[frags_id[i] ].length;
+        let c = frags[frags_id[i] ].color;
+        irradiance += exp(occlusion) * (1 - exp(-sigma * delta)) * c;   
+        occlusion += -sigma * delta;
+    }
+    outputBuffer.pixels[pixelId] = vec4f(irradiance, 1.0f);
+    //let tmp = frags[frags_id[1] ];
+    //outputBuffer.pixels[pixelId] = vec4f(vec3f(tmp.length), 1.0f);
+    //outputBuffer.pixels[pixelId] = vec4f(tmp.color, 1.0f);
+    //outputBuffer.pixels[pixelId] = vec4f(vec3f(1 - exp(occlusion)), 1.0f);
+    //outputBuffer.pixels[pixelId] = vec4f(vec3f(f32(fragCount) / 3.0f), 1.0f);
+    //  outputBuffer.pixels[pixelId] = vec4f(vec3f(tmp.length), 1.0f);
 }
