@@ -301,7 +301,7 @@ class CameraWander extends CameraControl {
             mouseDownDirection = undefined
         }
         document.onwheel = function (event: WheelEvent) {
-            _this.distance += event.deltaY * 0.01
+            _this.distance += event.deltaY * 0.002
         }
 
     }
