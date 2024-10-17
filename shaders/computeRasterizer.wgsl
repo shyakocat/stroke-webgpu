@@ -1,6 +1,7 @@
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;
-const STROKE_MAX_COUNT = 512;
+const STROKE_MAX_COUNT = 5;
+const STROKE_MAX_COUNT_PLUS_1 = STROKE_MAX_COUNT + 1;
 const DENSITY_SCALE = 20;
 
 struct LightPillar {
@@ -165,8 +166,7 @@ fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // }
     // workgroupBarrier();
     // // per pixel calculate intersection, sort, α-blending
-    var frags: array<LightPillar, STROKE_MAX_COUNT>;
-    var frags_id: array<u32, STROKE_MAX_COUNT>;
+    var frags: array<LightPillar, STROKE_MAX_COUNT_PLUS_1>;
     let pixelX = global_id.x * 16 + (global_id.z / TILE_WIDTH);
     let pixelY = global_id.y * 16 + (global_id.z % TILE_HEIGHT);
     let pixelId = pixelX + pixelY * uniforms.screenWidth;
@@ -213,30 +213,23 @@ fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
         tmp.length = d2 - d1;
         //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
         tmp.key = tmp.depth;
-        frags[fragCount] = tmp;
-        fragCount++;
+        var pos = fragCount;
+        if (fragCount < STROKE_MAX_COUNT) { fragCount++; }
+        while (pos > 0) {
+            if (tmp.key < frags[pos - 1].key) { frags[pos] = frags[pos - 1]; pos--; }
+            else { break; }
+        }
+        frags[pos] = tmp;
     }
     if fragCount == 0 { return; }
-    for (var i: u32 = 0; i < fragCount; i++) {
-        frags_id[i] = i;
-    }
-    for (var i: u32 = 0; i < fragCount; i++) {
-        for (var j = i + 1; j < fragCount; j++) {
-            if frags[frags_id[j] ].key < frags[frags_id[i] ].key {
-                var t = frags_id[i];
-                frags_id[i] = frags_id[j];
-                frags_id[j] = t;
-            }
-        }
-    }
     // I(s) = \sum_{n=1}^N    T(n) * (1 - exp(-sigma_n * delta_n)) * c_n    
     // where T(n) = exp(-\sum_k=1^{n-1}  sigma_k * delta_k)   delta_n = t_{n+1} = t_n
     var irradiance : vec3f = vec3f(0);
     var occlusion : f32 = 0;
     for (var i: u32 = 0; i < fragCount; i++) {
-        let sigma = frags[frags_id[i] ].density * DENSITY_SCALE;
-        let delta = frags[frags_id[i] ].length;
-        let c = frags[frags_id[i] ].color;
+        let sigma = frags[i].density * DENSITY_SCALE;
+        let delta = frags[i].length;
+        let c = frags[i].color;
         irradiance += exp(occlusion) * (1 - exp(-sigma * delta)) * c;   
         occlusion += -sigma * delta;
     }
