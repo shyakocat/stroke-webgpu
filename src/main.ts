@@ -170,7 +170,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     })
     const rasterizerPipeline = device.createComputePipeline({
         layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
-        compute: { module: computeRasterizerModule, entryPoint: "rasterize_sphere" }
+        compute: { module: computeRasterizerModule, entryPoint: "rasterize" }
     })
 
     const cameraCtrl: CameraControl = new CameraWander(WIDTH, HEIGHT)
@@ -182,7 +182,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         //console.log(mvp, [WIDTH, HEIGHT])
         
         device.queue.writeBuffer(UBOBuffer, 0, new Uint32Array([WIDTH, HEIGHT]).buffer)
-        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([1, ]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([2, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 12, new Uint32Array([strokeCount, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
         device.queue.writeBuffer(UBOBuffer, 80, (mv as Float32Array).buffer)
@@ -211,37 +211,37 @@ abstract class CameraControl {
     abstract getMV(): mat4;
 }
 
-class CameraSpin extends CameraControl {
-    modelMatrix: mat4;
-    viewMatrix: mat4;
-    projectionMatrix: mat4;
+// class CameraSpin extends CameraControl {
+//     modelMatrix: mat4;
+//     viewMatrix: mat4;
+//     projectionMatrix: mat4;
 
-    constructor(WIDTH: number, HEIGHT: number) {
-        super();
-        const aspect = WIDTH / HEIGHT
-        this.projectionMatrix = mat4.create()
-        mat4.perspective(this.projectionMatrix, 0.4 * Math.PI, aspect, 0.01, 100.0)
-        this.viewMatrix = mat4.create()
-        this.modelMatrix = mat4.create()
-    }
+//     constructor(WIDTH: number, HEIGHT: number) {
+//         super();
+//         const aspect = WIDTH / HEIGHT
+//         this.projectionMatrix = mat4.create()
+//         mat4.perspective(this.projectionMatrix, 0.4 * Math.PI, aspect, 0.01, 100.0)
+//         this.viewMatrix = mat4.create()
+//         this.modelMatrix = mat4.create()
+//     }
 
-    getMVP() {
-        const now = Date.now() / 1000
-        this.viewMatrix = mat4.create()
-        mat4.translate(this.viewMatrix, this.viewMatrix, vec3.fromValues(0, 0, -10))
-        this.modelMatrix = mat4.create()
-        mat4.rotate(this.modelMatrix, this.modelMatrix, now, vec3.fromValues(0, 1, 0))
-        mat4.rotate(this.modelMatrix, this.modelMatrix, Math.PI / 2, vec3.fromValues(1, 0, 0))
-        const modelViewProjectionMatrix = <Float32Array>mat4.create()
-        mat4.multiply(modelViewProjectionMatrix, this.viewMatrix, this.modelMatrix)
-        mat4.multiply(modelViewProjectionMatrix, this.projectionMatrix, modelViewProjectionMatrix)
-        return modelViewProjectionMatrix
-    }
+//     getMVP() {
+//         const now = Date.now() / 1000
+//         this.viewMatrix = mat4.create()
+//         mat4.translate(this.viewMatrix, this.viewMatrix, vec3.fromValues(0, 0, -10))
+//         this.modelMatrix = mat4.create()
+//         mat4.rotate(this.modelMatrix, this.modelMatrix, now, vec3.fromValues(0, 1, 0))
+//         mat4.rotate(this.modelMatrix, this.modelMatrix, Math.PI / 2, vec3.fromValues(1, 0, 0))
+//         const modelViewProjectionMatrix = <Float32Array>mat4.create()
+//         mat4.multiply(modelViewProjectionMatrix, this.viewMatrix, this.modelMatrix)
+//         mat4.multiply(modelViewProjectionMatrix, this.projectionMatrix, modelViewProjectionMatrix)
+//         return modelViewProjectionMatrix
+//     }
 
-    getMV() {
-        throw new Error("Not Impl")
-    }
-}
+//     getMV() {
+//         throw new Error("Not Impl")
+//     }
+// }
 
 class CameraWander extends CameraControl {
     distance: number;
@@ -255,7 +255,7 @@ class CameraWander extends CameraControl {
         const aspect = WIDTH / HEIGHT
         this.projectionMatrix = mat4.create()
         mat4.perspective(this.projectionMatrix, 0.5 * Math.PI, aspect, 0.01, 100.0)
-        this.distance = 10.5
+        this.distance = 5.5
         this.intersect = vec3.fromValues(0, 0, 0)
         this.rotate = vec3.fromValues(0, 0, 0)
         let mouseDownDirection = <boolean | undefined>undefined
@@ -327,6 +327,12 @@ class CameraWander extends CameraControl {
 
         const viewMatrix = mat4.create()
         mat4.lookAt(viewMatrix, m_eye, m_center, m_up)
-        return viewMatrix
+
+        const modelMatrix = mat4.create()
+        mat4.rotate(modelMatrix, modelMatrix, Math.PI / 2, vec3.fromValues(1, 0, 0))
+
+        const modelViewMatrix = <Float32Array>mat4.create()
+        mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix)
+        return modelViewMatrix
     }
 }

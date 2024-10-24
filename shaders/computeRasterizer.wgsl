@@ -4,6 +4,7 @@ const STROKE_MAX_COUNT = 5;                             // 每个像素采样的
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
+const eps = 1e-5;
 
 struct LightPillar {
     key: f32,
@@ -16,12 +17,15 @@ struct LightPillar {
 // warn: vec3<f32> size 12 but align to 16
 // density => color.w
 struct Entity { transform: mat4x4<f32>, color: vec4<f32>, };
-struct Sphere { base: Entity, };                    // Support
+struct Sphere { base: Entity, };                    // Support 球体
+struct Cube { base: Entity, };                      // Support 立方体
+struct Tetrahedron { base: Entity, };               // Support 四面体
+struct Octahedron { base: Entity, };                // Support 八面体
 
 struct UBO {            // align(16) size(96)
     screenWidth: u32,
     screenHeight: u32,
-    strokeType: u32,                                // 1
+    strokeType: u32,                                // 1, 2
     strokeCount: u32,
     modelViewProjectionMatrix: mat4x4<f32>,
     modelViewMatrix: mat4x4<f32>,
@@ -80,6 +84,18 @@ fn inverse(m: mat4x4f) -> mat4x4f {
     ) * (1 / det);
 }
 
+fn getEntity(index: u32) -> Entity {
+    var e: Entity;
+    e.transform = mat4x4<f32>(
+        strokeBuffer.data[index + 0u], strokeBuffer.data[index + 1u], strokeBuffer.data[index + 2u], strokeBuffer.data[index + 3u],
+        strokeBuffer.data[index + 4u], strokeBuffer.data[index + 5u], strokeBuffer.data[index + 6u], strokeBuffer.data[index + 7u],
+        strokeBuffer.data[index + 8u], strokeBuffer.data[index + 9u], strokeBuffer.data[index + 10u], strokeBuffer.data[index + 11u],
+        strokeBuffer.data[index + 12u], strokeBuffer.data[index + 13u], strokeBuffer.data[index + 14u], strokeBuffer.data[index + 15u]
+    );
+    e.color = vec4<f32>(strokeBuffer.data[index + 16u], strokeBuffer.data[index + 17u], strokeBuffer.data[index + 18u], strokeBuffer.data[index + 19u]);
+    return e;
+}
+
 @compute @workgroup_size(16, 16)
 fn clear(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // global_id.x is pixel x
@@ -102,38 +118,32 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if global_id.x >= uniforms.strokeCount { return; }
     let TILE_COUNT_X = (uniforms.screenWidth - 1) / TILE_WIDTH + 1;
     let TILE_COUNT_Y = (uniforms.screenHeight - 1) / TILE_HEIGHT + 1;
-    if uniforms.strokeType == 1 {   
-        // Ellipsoid
+    if uniforms.strokeType == 1 || uniforms.strokeType == 2 || uniforms.strokeType == 3 || uniforms.strokeType == 4 {   
+        // Ellipsode or Box or Tetrahedron or Octahedron
         let index = global_id.x * 20u;
         var data: Sphere;
-        data.base.transform = mat4x4<f32>(
-            strokeBuffer.data[index + 0u], strokeBuffer.data[index + 1u], strokeBuffer.data[index + 2u], strokeBuffer.data[index + 3u],
-            strokeBuffer.data[index + 4u], strokeBuffer.data[index + 5u], strokeBuffer.data[index + 6u], strokeBuffer.data[index + 7u],
-            strokeBuffer.data[index + 8u], strokeBuffer.data[index + 9u], strokeBuffer.data[index + 10u], strokeBuffer.data[index + 11u],
-            strokeBuffer.data[index + 12u], strokeBuffer.data[index + 13u], strokeBuffer.data[index + 14u], strokeBuffer.data[index + 15u]
-        );
-        data.base.color = vec4<f32>(strokeBuffer.data[index + 16u], strokeBuffer.data[index + 17u], strokeBuffer.data[index + 18u], strokeBuffer.data[index + 19u]);
+        data.base = getEntity(index);
         // 直接判椭球太难，可以判椭球的包围盒
         let m = uniforms.modelViewProjectionMatrix * data.base.transform;
-        var cube = array<vec3<f32>, 8>(
+        var cubes = array<vec3<f32>, 8>(
             vec3<f32>(-1.0f, -1.0f, -1.0f), vec3<f32>(-1.0f, -1.0f, 1.0f),
             vec3<f32>(-1.0f, 1.0f, -1.0f), vec3<f32>(-1.0f, 1.0f, 1.0f),
             vec3<f32>(1.0f, -1.0f, -1.0f), vec3<f32>(1.0f, -1.0f, 1.0f),
             vec3<f32>(1.0f, 1.0f, -1.0f), vec3<f32>(1.0f, 1.0f, 1.0f)
         );
         for (var i = 0u; i < 8u; i++) {
-            let screenPos = uniforms.modelViewProjectionMatrix * data.base.transform * vec4f(cube[i], 1.0f);
-            cube[i] = vec3f(
+            let screenPos = uniforms.modelViewProjectionMatrix * data.base.transform * vec4f(cubes[i], 1.0f);
+            cubes[i] = vec3f(
                 (screenPos.x / screenPos.w * 0.5 + 0.5) * f32(uniforms.screenWidth),
                 (screenPos.y / screenPos.w * 0.5 + 0.5) * f32(uniforms.screenHeight),
                 screenPos.z / screenPos.w
             );
         }
-        var cube_min: vec3<f32> = cube[0];
-        var cube_max: vec3<f32> = cube[0];
+        var cube_min: vec3<f32> = cubes[0];
+        var cube_max: vec3<f32> = cubes[0];
         for (var i = 1u; i < 8u; i++) {
-            cube_min = min(cube_min, cube[i]);
-            cube_max = max(cube_max, cube[i]);
+            cube_min = min(cube_min, cubes[i]);
+            cube_max = max(cube_max, cubes[i]);
         }
         let tile_lt = vec2<u32>(global_id.y * TILE_WIDTH, global_id.z * TILE_HEIGHT);
         let tile_rb = vec2<u32>(global_id.y * TILE_WIDTH + TILE_WIDTH, global_id.z * TILE_HEIGHT + TILE_HEIGHT);
@@ -153,7 +163,7 @@ struct Pair { key: f32, value: u32, };
 
 // 16x16 pixels per tile
 @compute @workgroup_size(1, 1, 16)
-fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // global_id.x is tile width id
     // global_id.y is tile height id
     // global_id.z is pixel id
@@ -176,52 +186,104 @@ fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if pixelX > uniforms.screenWidth || pixelY > uniforms.screenHeight { return; }
     //outputBuffer.pixels[pixelId] = vec4f(f32(listCount) / f32(uniforms.strokeCount), 0, 0, 1); return;
     var sampleCount: u32 = 0;
-    for (var i: u32 = 0; i < listCount; i++) {
-        let index = binBuffer.id[indexBias + i] * 20u;
-        var data: Sphere;
-        data.base.transform = mat4x4<f32>(
-            strokeBuffer.data[index + 0u], strokeBuffer.data[index + 1u], strokeBuffer.data[index + 2u], strokeBuffer.data[index + 3u],
-            strokeBuffer.data[index + 4u], strokeBuffer.data[index + 5u], strokeBuffer.data[index + 6u], strokeBuffer.data[index + 7u],
-            strokeBuffer.data[index + 8u], strokeBuffer.data[index + 9u], strokeBuffer.data[index + 10u], strokeBuffer.data[index + 11u],
-            strokeBuffer.data[index + 12u], strokeBuffer.data[index + 13u], strokeBuffer.data[index + 14u], strokeBuffer.data[index + 15u]
-        );
-        data.base.color = vec4<f32>(strokeBuffer.data[index + 16u], strokeBuffer.data[index + 17u], strokeBuffer.data[index + 18u], strokeBuffer.data[index + 19u]);
-        let m = uniforms.modelViewProjectionMatrix * data.base.transform;
-        let m_inv = inverse(m);
-        var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
-        _u /= _u.w;
-        var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
-        _v /= _v.w;
-        let u: vec3f = (_u - _v).xyz;
-        let v: vec3f = _v.xyz;
-        let a = dot(u, u);
-        let b = 2 * dot(u, v);
-        let c = dot(v, v) - 1;
-        let delta2 = b * b - 4 * a * c;
-        if delta2 < 0 { continue; }
-        let delta = sqrt(delta2);
-        let root1 = (-b - delta) / (2 * a);
-        let root2 = (-b + delta) / (2 * a);
-        let _p1 = u * root1 + v;
-        let _p2 = u * root2 + v;
-        let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
-        let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
-        var d1 = -p1.z / p1.w;
-        var d2 = -p2.z / p2.w;
-        if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
-        var tmp: LightPillar;
-        tmp.color = data.base.color.xyz;
-        tmp.density = data.base.color.w;
-        tmp.depth = d1;
-        tmp.length = d2 - d1;
-        //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
-        tmp.key = tmp.depth;
-        var pos = sampleCount;
-        if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
-        while pos > 0 {
-            if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
+    if uniforms.strokeType == 1 {
+        for (var i: u32 = 0; i < listCount; i++) {
+            let index = binBuffer.id[indexBias + i] * 20u;
+            var data: Sphere;
+            data.base = getEntity(index);
+            let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+            let m_inv = inverse(m);
+            var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
+            let a = dot(u, u);
+            let b = 2 * dot(u, v);
+            let c = dot(v, v) - 1;
+            let delta2 = b * b - 4 * a * c;
+            if delta2 < 0 { continue; }
+            let delta = sqrt(delta2);
+            let root1 = (-b - delta) / (2 * a);
+            let root2 = (-b + delta) / (2 * a);
+            let _p1 = u * root1 + v;
+            let _p2 = u * root2 + v;
+            let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
+            let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+            var d1 = -p1.z / p1.w;
+            var d2 = -p2.z / p2.w;
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+            var tmp: LightPillar;
+            tmp.color = data.base.color.xyz;
+            tmp.density = data.base.color.w;
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
+            var pos = sampleCount;
+            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
+            while pos > 0 {
+                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
+            }
+            samples[pos] = tmp;
         }
-        samples[pos] = tmp;
+    } else if uniforms.strokeType == 2 {
+        for (var i: u32 = 0; i < listCount; i++) {
+            let index = binBuffer.id[indexBias + i] * 20u;
+            var data: Cube;
+            data.base = getEntity(index);
+            let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+            let m_inv = inverse(m);
+            var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
+            let surfaces = array<vec4f, 6>(
+                vec4f(0.0f, 1.0f, 0.0f, -1.0f), vec4f(0.0f, 1.0f, 0.0f, 1.0f),
+                vec4f(0.0f, 0.0f, 1.0f, -1.0f), vec4f(0.0f, 0.0f, 1.0f, 1.0f),
+                vec4f(1.0f, 0.0f, 0.0f, -1.0f), vec4f(1.0f, 0.0f, 0.0f, 1.0f),
+            );
+            var solutionCount: u32 = 0;
+            var solutions = array<f32, 2>();
+            for (var j: u32 = 0; j < 6; j++) {
+                let s = surfaces[j];
+                if abs(dot(s.xyz, u)) < eps { continue; }
+                let t = (-s.w - dot(s.xyz, v)) / dot(s.xyz, u);
+                let p = u * t + v;
+                // let w = dot(s, vec4f(p, 1.0f));
+                // outputBuffer.pixels[pixelId] = vec4f(vec3f(w), 1.0f); return;
+                // outputBuffer.pixels[pixelId] = vec4f((p + 10) / 20, 1.0f); return;
+                if abs(p.x) > 1 + eps || abs(p.y) > 1 + eps || abs(p.z) > 1 + eps { continue; }
+                solutions[solutionCount] = t;
+                solutionCount++;
+                if solutionCount == 2 { break; }
+            }
+            //outputBuffer.pixels[pixelId] = vec4f(vec3f(f32(solutionCount) / 6), 1.0f); return;
+            if solutionCount != 2 { continue; }
+            let _p1 = u * solutions[0] + v;
+            let _p2 = u * solutions[1] + v;
+            let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
+            let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+            var d1 = -p1.z / p1.w;
+            var d2 = -p2.z / p2.w;
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+            var tmp: LightPillar;
+            tmp.color = data.base.color.xyz;
+            tmp.density = data.base.color.w;
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
+            var pos = sampleCount;
+            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
+            while pos > 0 {
+                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
+            }
+            samples[pos] = tmp;
+        }
     }
     if sampleCount == 0 { return; }
     var frags: array<LightPillar, STROKE_MAX_COUNT_MUL_2>;
@@ -271,6 +333,6 @@ fn rasterize_sphere(@builtin(global_invocation_id) global_id: vec3<u32>) {
     irradiance /= 1 - exp(occlusion);   // ref: https://arxiv.org/abs/2311.15637
     outputBuffer.pixels[pixelId] = vec4f(irradiance, 1.0f);
     //outputBuffer.pixels[pixelId] = vec4f(vec3f(frags[0].depth) / 8, 1.0f);
-    //outputBuffer.pixels[pixelId] = vec4f(frags[4].color, 1.0f);
+    //outputBuffer.pixels[pixelId] = vec4f(frags[0].color, 1.0f);
     //outputBuffer.pixels[pixelId] = vec4f(vec3f(f32(fragCount) / 10), 1.0f);
 }
