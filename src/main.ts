@@ -182,7 +182,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         //console.log(mvp, [WIDTH, HEIGHT])
         
         device.queue.writeBuffer(UBOBuffer, 0, new Uint32Array([WIDTH, HEIGHT]).buffer)
-        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([2, ]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([4, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 12, new Uint32Array([strokeCount, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
         device.queue.writeBuffer(UBOBuffer, 80, (mv as Float32Array).buffer)

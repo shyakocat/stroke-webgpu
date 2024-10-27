@@ -161,6 +161,47 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
 struct Pair { key: f32, value: u32, };
 
+fn inverse3x3(matrix: mat3x3<f32>) -> mat3x3<f32> {
+    // 获取矩阵元素
+    let a00 = matrix[0][0];
+    let a01 = matrix[0][1];
+    let a02 = matrix[0][2];
+    let a10 = matrix[1][0];
+    let a11 = matrix[1][1];
+    let a12 = matrix[1][2];
+    let a20 = matrix[2][0];
+    let a21 = matrix[2][1];
+    let a22 = matrix[2][2];
+
+    // 计算行列式
+    let determinant = a00 * (a11 * a22 - a12 * a21) - a01 * (a10 * a22 - a12 * a20) + a02 * (a10 * a21 - a11 * a20);
+
+    // 如果行列式为0，则矩阵不可逆
+    // if determinant == 0.0 {
+    //     return mat3x3<f32>(
+    //         vec3<f32>(0.0, 0.0, 0.0),
+    //         vec3<f32>(0.0, 0.0, 0.0),
+    //         vec3<f32>(0.0, 0.0, 0.0)
+    //     );
+    // }
+
+    // 计算矩阵的余子式矩阵
+    let cofactor = mat3x3<f32>(
+        vec3<f32>((a11 * a22 - a12 * a21), -(a01 * a22 - a02 * a21), (a01 * a12 - a02 * a11)),
+        vec3<f32>(-(a10 * a22 - a12 * a20), (a00 * a22 - a02 * a20), -(a00 * a12 - a02 * a10)),
+        vec3<f32>((a10 * a21 - a11 * a20), -(a00 * a21 - a01 * a20), (a00 * a11 - a01 * a10))
+    );
+
+    // 转置余子式矩阵并除以行列式
+    return transpose(cofactor) * (1 / determinant);
+}
+
+fn barycentricMatrix(triangles: array<vec3f, 3>) -> mat3x3f {
+    let OA = triangles[1] - triangles[0];
+    let OB = triangles[2] - triangles[0];
+    return inverse3x3(transpose(mat3x3f(OA, OB, cross(OA, OB))));
+}
+
 // 16x16 pixels per tile
 @compute @workgroup_size(1, 1, 16)
 fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -187,6 +228,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     //outputBuffer.pixels[pixelId] = vec4f(f32(listCount) / f32(uniforms.strokeCount), 0, 0, 1); return;
     var sampleCount: u32 = 0;
     if uniforms.strokeType == 1 {
+        // Ellipsoid
         for (var i: u32 = 0; i < listCount; i++) {
             let index = binBuffer.id[indexBias + i] * 20u;
             var data: Sphere;
@@ -229,6 +271,12 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             samples[pos] = tmp;
         }
     } else if uniforms.strokeType == 2 {
+        // Cube
+        let surfaces = array<vec4f, 6>(
+            vec4f(0.0f, 1.0f, 0.0f, -1.0f), vec4f(0.0f, 1.0f, 0.0f, 1.0f),
+            vec4f(0.0f, 0.0f, 1.0f, -1.0f), vec4f(0.0f, 0.0f, 1.0f, 1.0f),
+            vec4f(1.0f, 0.0f, 0.0f, -1.0f), vec4f(1.0f, 0.0f, 0.0f, 1.0f),
+        );
         for (var i: u32 = 0; i < listCount; i++) {
             let index = binBuffer.id[indexBias + i] * 20u;
             var data: Cube;
@@ -241,11 +289,6 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             _v /= _v.w;
             let u: vec3f = (_u - _v).xyz;
             let v: vec3f = _v.xyz;
-            let surfaces = array<vec4f, 6>(
-                vec4f(0.0f, 1.0f, 0.0f, -1.0f), vec4f(0.0f, 1.0f, 0.0f, 1.0f),
-                vec4f(0.0f, 0.0f, 1.0f, -1.0f), vec4f(0.0f, 0.0f, 1.0f, 1.0f),
-                vec4f(1.0f, 0.0f, 0.0f, -1.0f), vec4f(1.0f, 0.0f, 0.0f, 1.0f),
-            );
             var solutionCount: u32 = 0;
             var solutions = array<f32, 2>();
             for (var j: u32 = 0; j < 6; j++) {
@@ -262,6 +305,142 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 if solutionCount == 2 { break; }
             }
             //outputBuffer.pixels[pixelId] = vec4f(vec3f(f32(solutionCount) / 6), 1.0f); return;
+            if solutionCount != 2 { continue; }
+            let _p1 = u * solutions[0] + v;
+            let _p2 = u * solutions[1] + v;
+            let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
+            let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+            var d1 = -p1.z / p1.w;
+            var d2 = -p2.z / p2.w;
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+            var tmp: LightPillar;
+            tmp.color = data.base.color.xyz;
+            tmp.density = data.base.color.w;
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
+            var pos = sampleCount;
+            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
+            while pos > 0 {
+                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
+            }
+            samples[pos] = tmp;
+        }
+    } else if uniforms.strokeType == 3 {
+        // Tetrahedron
+        let triangles = array<array<vec3f, 3>, 4>(
+            array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(1, -1, -1), vec3f(-1, -1, 1)),
+            array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(1, -1, -1), vec3f(1, 1, 1)),
+            array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(-1, -1, 1), vec3f(1, 1, 1)),
+            array<vec3f, 3>(vec3f(1, -1, -1), vec3f(-1, -1, 1), vec3f(1, 1, 1)),
+        );
+        let m_tris = array<mat3x3f, 4>(
+            barycentricMatrix(triangles[0]),
+            barycentricMatrix(triangles[1]),
+            barycentricMatrix(triangles[2]),
+            barycentricMatrix(triangles[3]),
+        );
+        for (var i: u32 = 0; i < listCount; i++) {
+            let index = binBuffer.id[indexBias + i] * 20u;
+            var data: Cube;
+            data.base = getEntity(index);
+            let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+            let m_inv = inverse(m);
+            var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
+            var solutionCount: u32 = 0;
+            var solutions = array<f32, 2>();
+            for (var j: u32 = 0; j < 4; j++) {
+                // 推导：c = M^-1 * (P - O);   c = (M^-1 * u) t + M^-1*(v - O)
+                let Mi = m_tris[j];
+                let O = triangles[j][0];
+                let m_c1 = Mi * u;
+                let m_c2 = Mi * (v - O);
+                let t = -m_c2.z / m_c1.z;
+                let p = u * t + v;
+                let coef = Mi * (p - O);
+                if !(coef[0] > -eps && coef[1] > -eps && coef[0] + coef[1] < 1 + eps) { continue; }
+                solutions[solutionCount] = t;
+                solutionCount++;
+                if solutionCount == 2 { break; }
+            }
+            //outputBuffer.pixels[pixelId] = vec4f(vec3f(f32(solutionCount) / 4), 1.0f); return;
+            if solutionCount != 2 { continue; }
+            let _p1 = u * solutions[0] + v;
+            let _p2 = u * solutions[1] + v;
+            let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
+            let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+            var d1 = -p1.z / p1.w;
+            var d2 = -p2.z / p2.w;
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+            var tmp: LightPillar;
+            tmp.color = data.base.color.xyz;
+            tmp.density = data.base.color.w;
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
+            var pos = sampleCount;
+            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
+            while pos > 0 {
+                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
+            }
+            samples[pos] = tmp;
+        }
+    } else if uniforms.strokeType == 4 {
+        // Tetrahedron
+        let P1 = vec3f(1, 0, 0);
+        let P2 = vec3f(-1, 0, 0);
+        let P3 = vec3f(0, -1, 0);
+        let P4 = vec3f(0, 1, 0);
+        let P5 = vec3f(0, 0, 1);
+        let P6 = vec3f(0, 0, -1);
+        let triangles = array<array<vec3f, 3>, 8>(
+            array<vec3f, 3>(P1, P3, P5), array<vec3f, 3>(P1, P3, P6),
+            array<vec3f, 3>(P1, P4, P5), array<vec3f, 3>(P1, P4, P6),
+            array<vec3f, 3>(P2, P3, P5), array<vec3f, 3>(P2, P3, P6),
+            array<vec3f, 3>(P2, P4, P5), array<vec3f, 3>(P2, P4, P6),
+        );
+        let m_tris = array<mat3x3f, 8>(
+            barycentricMatrix(triangles[0]), barycentricMatrix(triangles[1]),
+            barycentricMatrix(triangles[2]), barycentricMatrix(triangles[3]),
+            barycentricMatrix(triangles[4]), barycentricMatrix(triangles[5]),
+            barycentricMatrix(triangles[6]), barycentricMatrix(triangles[7]),
+        );
+        for (var i: u32 = 0; i < listCount; i++) {
+            let index = binBuffer.id[indexBias + i] * 20u;
+            var data: Cube;
+            data.base = getEntity(index);
+            let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+            let m_inv = inverse(m);
+            var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
+            var solutionCount: u32 = 0;
+            var solutions = array<f32, 2>();
+            for (var j: u32 = 0; j < 8; j++) {
+                // 推导：c = M^-1 * (P - O);   c = (M^-1 * u) t + M^-1*(v - O)
+                let Mi = m_tris[j];
+                let O = triangles[j][0];
+                let m_c1 = Mi * u;
+                let m_c2 = Mi * (v - O);
+                let t = -m_c2.z / m_c1.z;
+                let p = u * t + v;
+                let coef = Mi * (p - O);
+                if !(coef[0] > -eps && coef[1] > -eps && coef[0] + coef[1] < 1 + eps) { continue; }
+                solutions[solutionCount] = t;
+                solutionCount++;
+                if solutionCount == 2 { break; }
+            }
+            //outputBuffer.pixels[pixelId] = vec4f(vec3f(f32(solutionCount) / 4), 1.0f); return;
             if solutionCount != 2 { continue; }
             let _p1 = u * solutions[0] + v;
             let _p2 = u * solutions[1] + v;
@@ -332,7 +511,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     irradiance /= 1 - exp(occlusion);   // ref: https://arxiv.org/abs/2311.15637
     outputBuffer.pixels[pixelId] = vec4f(irradiance, 1.0f);
-    //outputBuffer.pixels[pixelId] = vec4f(vec3f(frags[0].depth) / 8, 1.0f);
+    //outputBuffer.pixels[pixelId] = vec4f(vec3f(-frags[4].length * 20), 1.0f);
     //outputBuffer.pixels[pixelId] = vec4f(frags[0].color, 1.0f);
     //outputBuffer.pixels[pixelId] = vec4f(vec3f(f32(fragCount) / 10), 1.0f);
 }
