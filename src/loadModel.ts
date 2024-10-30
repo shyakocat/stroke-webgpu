@@ -74,7 +74,7 @@ export async function loadModel() {
 	// 	// 	density_params: 1.0,
 	// 	// },
 	// 	"strokeNo.5": {
-	// 		shape_params: [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.1, 0.1],
+	// 		shape_params: [0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 0.1, 0.1],
 	// 		color_params: [1.0, 0, 0],
 	// 		density_params: 1.0,
 	// 	},
@@ -109,7 +109,7 @@ export async function loadModel() {
 				let t2 = (i + 1) / PARTITION_COUNT;
 				vec3.bezier(e1, p0, p1, p2, p3, t1);
 				vec3.bezier(e2, p0, p1, p2, p3, t2);
-				let radius = ra + (ra - rb) * (t1 + t2) * 0.5;
+				let radius = ra + (rb - ra) * (t1 + t2) * 0.5;
 				let e0 = vec3.create();								// center point of capsule
 				vec3.add(e0, e1, e2);
 				vec3.scale(e0, e0, 0.5);
