@@ -118,7 +118,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const [TILE_COUNT_X, TILE_COUNT_Y] = [Math.ceil(WIDTH / 16), Math.ceil(HEIGHT / 16)]
 
     // const NUMBER_PRE_ELEMENT = 3 * 4     // triangle, 3 vertex, (3 + 1) f32 per vertex
-    const NUMBER_PRE_ELEMENT = 20           // transform 4x4 f32, color 3 f32, density 1 f32
+    //const NUMBER_PRE_ELEMENT = 20           // transform 4x4 f32, color 3 f32, density 1 f32
+    const NUMBER_PRE_ELEMENT = 22           // Capsule
     const strokeCount = strokeData.length / NUMBER_PRE_ELEMENT
     const strokeBuffer = device.createBuffer({ size: strokeData.byteLength, usage: GPUBufferUsage.STORAGE, mappedAtCreation: true, })
     new Float32Array(strokeBuffer.getMappedRange()).set(strokeData);
@@ -127,7 +128,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const outputBufferSize = Float32Array.BYTES_PER_ELEMENT * (WIDTH * HEIGHT) * 4;
     const outputBuffer = device.createBuffer({ size: outputBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
 
-    const binBufferSize = Uint32Array.BYTES_PER_ELEMENT * (TILE_COUNT_X * TILE_COUNT_Y) * 512;
+    const binBufferSize = Uint32Array.BYTES_PER_ELEMENT * (TILE_COUNT_X * TILE_COUNT_Y) * strokeCount;
     const binBuffer = device.createBuffer({ size: binBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
 
     const binSizeBufferSize = Uint32Array.BYTES_PER_ELEMENT * (TILE_COUNT_X * TILE_COUNT_Y);
@@ -182,7 +183,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         //console.log(mvp, [WIDTH, HEIGHT])
         
         device.queue.writeBuffer(UBOBuffer, 0, new Uint32Array([WIDTH, HEIGHT]).buffer)
-        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([4, ]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([5, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 12, new Uint32Array([strokeCount, ]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
         device.queue.writeBuffer(UBOBuffer, 80, (mv as Float32Array).buffer)

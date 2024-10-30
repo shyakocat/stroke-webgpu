@@ -21,6 +21,7 @@ struct Sphere { base: Entity, };                    // Support 球体
 struct Cube { base: Entity, };                      // Support 立方体
 struct Tetrahedron { base: Entity, };               // Support 四面体
 struct Octahedron { base: Entity, };                // Support 八面体
+struct Capsule { base: Entity, radius: f32, length: f32, }    // 胶囊体
 
 struct UBO {            // align(16) size(96)
     screenWidth: u32,
@@ -118,42 +119,62 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if global_id.x >= uniforms.strokeCount { return; }
     let TILE_COUNT_X = (uniforms.screenWidth - 1) / TILE_WIDTH + 1;
     let TILE_COUNT_Y = (uniforms.screenHeight - 1) / TILE_HEIGHT + 1;
-    if uniforms.strokeType == 1 || uniforms.strokeType == 2 || uniforms.strokeType == 3 || uniforms.strokeType == 4 {   
+    var index: u32;
+    if uniforms.strokeType == 1 || uniforms.strokeType == 2 || uniforms.strokeType == 3 || uniforms.strokeType == 4 { 
         // Ellipsode or Box or Tetrahedron or Octahedron
-        let index = global_id.x * 20u;
-        var data: Sphere;
-        data.base = getEntity(index);
-        // 直接判椭球太难，可以判椭球的包围盒
-        let m = uniforms.modelViewProjectionMatrix * data.base.transform;
-        var cubes = array<vec3<f32>, 8>(
+        index = global_id.x * 20u;
+    } else { 
+        // Capsule
+        index = global_id.x * 22u;
+    }
+    var base: Entity;
+    base = getEntity(index);
+    // 直接判图元太难，可以判图元的包围盒
+    let m = uniforms.modelViewProjectionMatrix * base.transform;
+    var cubes: array<vec3<f32>, 8>;
+    if uniforms.strokeType == 1 || uniforms.strokeType == 2 || uniforms.strokeType == 3 || uniforms.strokeType == 4 { 
+        // Ellipsode or Box or Tetrahedron or Octahedron
+        cubes = array<vec3<f32>, 8>(
             vec3<f32>(-1.0f, -1.0f, -1.0f), vec3<f32>(-1.0f, -1.0f, 1.0f),
             vec3<f32>(-1.0f, 1.0f, -1.0f), vec3<f32>(-1.0f, 1.0f, 1.0f),
             vec3<f32>(1.0f, -1.0f, -1.0f), vec3<f32>(1.0f, -1.0f, 1.0f),
             vec3<f32>(1.0f, 1.0f, -1.0f), vec3<f32>(1.0f, 1.0f, 1.0f)
         );
-        for (var i = 0u; i < 8u; i++) {
-            let screenPos = uniforms.modelViewProjectionMatrix * data.base.transform * vec4f(cubes[i], 1.0f);
-            cubes[i] = vec3f(
-                (screenPos.x / screenPos.w * 0.5 + 0.5) * f32(uniforms.screenWidth),
-                (screenPos.y / screenPos.w * 0.5 + 0.5) * f32(uniforms.screenHeight),
-                screenPos.z / screenPos.w
-            );
-        }
-        var cube_min: vec3<f32> = cubes[0];
-        var cube_max: vec3<f32> = cubes[0];
-        for (var i = 1u; i < 8u; i++) {
-            cube_min = min(cube_min, cubes[i]);
-            cube_max = max(cube_max, cubes[i]);
-        }
-        let tile_lt = vec2<u32>(global_id.y * TILE_WIDTH, global_id.z * TILE_HEIGHT);
-        let tile_rb = vec2<u32>(global_id.y * TILE_WIDTH + TILE_WIDTH, global_id.z * TILE_HEIGHT + TILE_HEIGHT);
-        if !(cube_min.x > f32(tile_rb.x) || cube_min.y > f32(tile_rb.y) || cube_max.x < f32(tile_lt.x) || cube_max.y < f32(tile_lt.y)) {
-            let index = global_id.y + global_id.z * TILE_COUNT_X;
-            let indexBias = uniforms.strokeCount * index;
-            binBuffer.id[indexBias + atomicAdd(&binSizeBuffer.size[index], 1)] = global_id.x;
-        }
+    } else { 
+        // Capsule
+        let r = strokeBuffer.data[index + 20u];
+        let l = strokeBuffer.data[index + 21u] * 0.5;
+        let h = l + r;
+        cubes = array<vec3<f32>, 8>(
+            vec3<f32>(-r, -r, -h), vec3<f32>(-r, -r, h),
+            vec3<f32>(-r, r, -h), vec3<f32>(-r, r, h),
+            vec3<f32>(r, -r, -h), vec3<f32>(r, -r, h),
+            vec3<f32>(r, r, -h), vec3<f32>(r, r, h)
+        );
+    }
+    for (var i = 0u; i < 8u; i++) {
+        let screenPos = uniforms.modelViewProjectionMatrix * base.transform * vec4f(cubes[i], 1.0f);
+        cubes[i] = vec3f(
+            (screenPos.x / screenPos.w * 0.5 + 0.5) * f32(uniforms.screenWidth),
+            (screenPos.y / screenPos.w * 0.5 + 0.5) * f32(uniforms.screenHeight),
+            screenPos.z / screenPos.w
+        );
+    }
+    var cube_min: vec3<f32> = cubes[0];
+    var cube_max: vec3<f32> = cubes[0];
+    for (var i = 1u; i < 8u; i++) {
+        cube_min = min(cube_min, cubes[i]);
+        cube_max = max(cube_max, cubes[i]);
+    }
+    let tile_lt = vec2<u32>(global_id.y * TILE_WIDTH, global_id.z * TILE_HEIGHT);
+    let tile_rb = vec2<u32>(global_id.y * TILE_WIDTH + TILE_WIDTH, global_id.z * TILE_HEIGHT + TILE_HEIGHT);
+    if !(cube_min.x > f32(tile_rb.x) || cube_min.y > f32(tile_rb.y) || cube_max.x < f32(tile_lt.x) || cube_max.y < f32(tile_lt.y)) {
+        let index = global_id.y + global_id.z * TILE_COUNT_X;
+        let indexBias = uniforms.strokeCount * index;
+        binBuffer.id[indexBias + atomicAdd(&binSizeBuffer.size[index], 1)] = global_id.x;
     }
 }
+
 
 
 // const SHARED_COUNT = 512;
@@ -202,6 +223,20 @@ fn barycentricMatrix(triangles: array<vec3f, 3>) -> mat3x3f {
     return inverse3x3(transpose(mat3x3f(OA, OB, cross(OA, OB))));
 }
 
+
+struct QuadraticEquationResult { hasAnswer: bool, answer: vec2<f32>,  };
+fn solve_quadratic_eqation(a: f32, b: f32, c: f32) -> QuadraticEquationResult {
+    var ret: QuadraticEquationResult;
+    let delta2 = b * b - 4 * a * c;
+    if delta2 < 0 { ret.hasAnswer = false; return ret; }
+    let delta = sqrt(delta2);
+    let root1 = (-b - delta) / (2 * a);
+    let root2 = (-b + delta) / (2 * a);
+    ret.hasAnswer = true;
+    ret.answer = vec2f(root1, root2);
+    return ret;
+}
+
 // 16x16 pixels per tile
 @compute @workgroup_size(1, 1, 16)
 fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -241,16 +276,10 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             _v /= _v.w;
             let u: vec3f = (_u - _v).xyz;
             let v: vec3f = _v.xyz;
-            let a = dot(u, u);
-            let b = 2 * dot(u, v);
-            let c = dot(v, v) - 1;
-            let delta2 = b * b - 4 * a * c;
-            if delta2 < 0 { continue; }
-            let delta = sqrt(delta2);
-            let root1 = (-b - delta) / (2 * a);
-            let root2 = (-b + delta) / (2 * a);
-            let _p1 = u * root1 + v;
-            let _p2 = u * root2 + v;
+            let ret = solve_quadratic_eqation(dot(u, u), 2 * dot(u, v), dot(v, v) - 1);
+            if !(ret.hasAnswer) { continue; }
+            let _p1 = u * ret.answer.x + v;
+            let _p2 = u * ret.answer.y + v;
             let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
             let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
             var d1 = -p1.z / p1.w;
@@ -393,7 +422,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             samples[pos] = tmp;
         }
     } else if uniforms.strokeType == 4 {
-        // Tetrahedron
+        // Octahedron
         let P1 = vec3f(1, 0, 0);
         let P2 = vec3f(-1, 0, 0);
         let P3 = vec3f(0, -1, 0);
@@ -442,6 +471,89 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
             //outputBuffer.pixels[pixelId] = vec4f(vec3f(f32(solutionCount) / 4), 1.0f); return;
             if solutionCount != 2 { continue; }
+            let _p1 = u * solutions[0] + v;
+            let _p2 = u * solutions[1] + v;
+            let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
+            let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+            var d1 = -p1.z / p1.w;
+            var d2 = -p2.z / p2.w;
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+            var tmp: LightPillar;
+            tmp.color = data.base.color.xyz;
+            tmp.density = data.base.color.w;
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
+            var pos = sampleCount;
+            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
+            while pos > 0 {
+                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
+            }
+            samples[pos] = tmp;
+        }
+    } else if uniforms.strokeType == 5 {
+        // Capsule
+        for (var i: u32 = 0; i < listCount; i++) {
+            let index = binBuffer.id[indexBias + i] * 22u;
+            var data: Capsule;
+            data.base = getEntity(index);
+            data.radius = strokeBuffer.data[index + 20u];
+            data.length = strokeBuffer.data[index + 21u];
+            let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+            let m_inv = inverse(m);
+            var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
+            let A = vec3f(0, 0, -data.length * 0.5);
+            let B = vec3f(0, 0, data.length * 0.5);
+            let AB = vec3f(0, 0, data.length);
+            var solutionCount: u32 = 0;
+            var solutions: array<f32, 6>;
+            // 判断中间圆柱体
+                {
+                let ret = solve_quadratic_eqation(
+                    dot(u.xy, u.xy),
+                    2 * dot(u.xy, v.xy),
+                    dot(v.xy, v.xy) - data.radius * data.radius
+                );
+                if ret.hasAnswer {
+                    let _p1 = u * (ret.answer.x) + v;
+                    let _p2 = u * (ret.answer.y) + v;
+                    let _t1 = dot(_p1 - A, AB) / dot(AB, AB);
+                    let _t2 = dot(_p2 - A, AB) / dot(AB, AB);
+                    if 0 <= _t1 && _t1 <= 1 { solutions[solutionCount] = ret.answer.x; solutionCount++; }
+                    if 0 <= _t2 && _t2 <= 1 { solutions[solutionCount] = ret.answer.y; solutionCount++; }
+                }
+            }
+            // 判断靠近A端
+                {
+                let ret = solve_quadratic_eqation(dot(u, u), 2 * dot(u, v - A), dot(v - A, v - A) - data.radius * data.radius);
+                if ret.hasAnswer {
+                    let _p1 = u * (ret.answer.x) + v;
+                    let _p2 = u * (ret.answer.y) + v;
+                    let _t1 = dot(_p1 - A, AB) / dot(AB, AB);
+                    let _t2 = dot(_p2 - A, AB) / dot(AB, AB);
+                    if _t1 < 0 { solutions[solutionCount] = ret.answer.x; solutionCount++; }
+                    if _t2 < 0 { solutions[solutionCount] = ret.answer.y; solutionCount++; }
+                }
+            }
+            // 判断靠近B端
+                {
+                let ret = solve_quadratic_eqation(dot(u, u), 2 * dot(u, v - B), dot(v - B, v - B) - data.radius * data.radius);
+                if ret.hasAnswer {
+                    let _p1 = u * (ret.answer.x) + v;
+                    let _p2 = u * (ret.answer.y) + v;
+                    let _t1 = dot(_p1 - A, AB) / dot(AB, AB);
+                    let _t2 = dot(_p2 - A, AB) / dot(AB, AB);
+                    if _t1 > 1 { solutions[solutionCount] = ret.answer.x; solutionCount++; }
+                    if _t2 > 1 { solutions[solutionCount] = ret.answer.y; solutionCount++; }
+                }
+            }
+            if solutionCount < 2 { continue; }
             let _p1 = u * solutions[0] + v;
             let _p2 = u * solutions[1] + v;
             let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
