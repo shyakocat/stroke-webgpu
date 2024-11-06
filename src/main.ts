@@ -82,11 +82,7 @@ async function init(mode: "viewer" | "test" = "viewer") {
                         try {
                             const formData = new FormData()
                             formData.append('image', blob, fileName + ".png")
-
-                            const response = await fetch('/api/saveImage', {
-                                method: 'POST',
-                                body: formData,
-                            })
+                            const response = await fetch('/api/saveImage', { method: 'POST', body: formData, })
                             if (response.ok) {
                                 const data = await response.json();
                                 console.log("Upload success", data);
@@ -101,7 +97,6 @@ async function init(mode: "viewer" | "test" = "viewer") {
         }
 
         function render() {
-
             const { value: frame, done } = frameIter.next();
             if (done) { return }
 
@@ -119,14 +114,16 @@ async function init(mode: "viewer" | "test" = "viewer") {
             addRasterizerPass(commandEncoder);
             addFullscreenPass(context, commandEncoder);
             device.queue.submit([commandEncoder.finish()]);
-            device.queue.onSubmittedWorkDone().then(() => {
-                exportCanvasAsPNG(canvas, frame.file_path)
+            // device.queue.onSubmittedWorkDone().then(() => {
+            //     exportCanvasAsPNG(canvas, frame.file_path)
+            //         .then(() => render())
+            //         .catch(err => console.error(err))
+            // });
+            exportCanvasAsPNG(canvas, frame.file_path)
                     .then(() => render())
                     .catch(err => console.error(err))
-            });
         }
-        render();
-
+        render()
     }
 }
 
