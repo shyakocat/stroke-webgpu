@@ -1,9 +1,10 @@
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 5;                             // 每个像素采样的个数
+const STROKE_MAX_COUNT = 4;                             // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
+const BACKGROUND_COLOR = vec4f(0);
 const eps = 1e-5;
 
 struct LightPillar {
@@ -108,7 +109,7 @@ fn clear(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if index < TILE_COUNT_X * TILE_COUNT_Y {
         atomicStore(&binSizeBuffer.size[index], 0);
     }
-    outputBuffer.pixels[index] = vec4f(0);
+    outputBuffer.pixels[index] = BACKGROUND_COLOR;
 }
 
 @compute @workgroup_size(256, 1, 1)

@@ -6,9 +6,16 @@ import computeRasterizerWGSL from '../shaders/computeRasterizer.wgsl?raw';
 import { loadModel } from './loadModel.ts';
 import Stats from 'stats.js';
 
-init();
 
-async function init() {
+import testData from '../test/transforms_test.json';
+
+type Tuple16<T> = [T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T];
+
+//@ts-ignore
+const mode = import.meta.env.VITE_EXEC_MODE === "test" ? "test" : "viewer";
+init(mode);
+
+async function init(mode: "viewer" | "test" = "viewer") {
     const adapter = await navigator.gpu.requestAdapter() as GPUAdapter;
     const device = await adapter.requestDevice();
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
@@ -17,7 +24,7 @@ async function init() {
     canvas.height = canvas.offsetHeight
 
     const devicePixelRatio = window.devicePixelRatio || 1;
-    const presentationSize = [
+    const presentationSize: [number, number] = [
         Math.floor(canvas.clientWidth /* * devicePixelRatio */),
         Math.floor(canvas.clientHeight /* * devicePixelRatio */),
     ];
@@ -29,32 +36,98 @@ async function init() {
         alphaMode: "opaque"
     });
 
-    const strokeData: Float32Array = await loadModel();
+    const [strokeData, strokeType] = await loadModel();
 
-    const { addRasterizerPass, outputBuffer } = createRasterizerPass(device, presentationSize, strokeData);
+    const cameraCtrl = mode === "viewer" ? new CameraWander(...presentationSize) : new CameraCustom();
+    const { addRasterizerPass, outputBuffer } = createRasterizerPass(device, presentationSize, strokeData, strokeType, cameraCtrl);
     const { addFullscreenPass } = createFullscreenPass(device, presentationSize, presentationFormat, outputBuffer);
 
-    var stats = new Stats();
-    stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-    document.body.appendChild(stats.dom);
+    if (mode === "viewer") {
+        var stats = new Stats();
+        stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+        document.body.appendChild(stats.dom);
 
-    function draw() {
+        function draw() {
 
-        stats.begin()
+            stats.begin()
 
-        const commandEncoder = device.createCommandEncoder();
+            const commandEncoder = device.createCommandEncoder();
 
-        addRasterizerPass(commandEncoder);
-        addFullscreenPass(context, commandEncoder);
+            addRasterizerPass(commandEncoder);
+            addFullscreenPass(context, commandEncoder);
 
-        device.queue.submit([commandEncoder.finish()]);
+            device.queue.submit([commandEncoder.finish()]);
 
-        stats.end()
+            stats.end()
 
-        requestAnimationFrame(draw);
+            requestAnimationFrame(draw);
+        }
+
+        draw();
     }
+    else if (mode === "test") {
 
-    draw();
+        const cam = <CameraCustom>cameraCtrl;
+
+        const [WIDTH, HEIGHT] = presentationSize;
+        cam.projectionMatrix = mat4.create()
+        mat4.perspective(cam.projectionMatrix, testData.camera_angle_x, WIDTH / HEIGHT, 0.01, 100)
+
+        const frameIter = testData.frames[Symbol.iterator]()
+
+        async function exportCanvasAsPNG(canvas: HTMLCanvasElement, fileName: string) {
+            return new Promise((resolve, reject) => {
+                canvas.toBlob(async (blob) => {
+                    if (blob) {
+                        try {
+                            const formData = new FormData()
+                            formData.append('image', blob, fileName + ".png")
+
+                            const response = await fetch('/api/saveImage', {
+                                method: 'POST',
+                                body: formData,
+                            })
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log("Upload success", data);
+                                resolve(data);
+                            }
+                            else { reject("Upload fail") }
+                        }
+                        catch (error) { reject(`Error: ${error}`) }
+                    } else { reject("Blob is null") }
+                }, "image/png");
+            })
+        }
+
+        function render() {
+
+            const { value: frame, done } = frameIter.next();
+            if (done) { return }
+
+            //function transpose(m : number[][]) { return m[0].map((col, c) => m.map((row, r) => row[c])) }
+            cam.viewMatrix = mat4.fromValues(...<Tuple16<number>>frame.transform_matrix.flat());
+            mat4.transpose(cam.viewMatrix, cam.viewMatrix);
+            mat4.invert(cam.viewMatrix, cam.viewMatrix);
+            // const rotateMatrix = mat4.create();
+            // mat4.rotateX(rotateMatrix, rotateMatrix, frame.rotation);
+            // mat4.mul(cam.viewMatrix, cam.viewMatrix, rotateMatrix);
+            const reflectionMatrix = mat4.fromValues(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+            mat4.mul(cam.viewMatrix, reflectionMatrix, cam.viewMatrix);
+
+            const commandEncoder = device.createCommandEncoder();
+            addRasterizerPass(commandEncoder);
+            addFullscreenPass(context, commandEncoder);
+            device.queue.submit([commandEncoder.finish()]);
+            device.queue.onSubmittedWorkDone().then(() => {
+                exportCanvasAsPNG(canvas, frame.file_path)
+                    .then(() => render())
+                    .catch(err => console.error(err))
+            });
+        }
+        render();
+
+    }
 }
 
 function createFullscreenPass(device: GPUDevice, presentationSize: number[], presentationFormat: GPUTextureFormat, finalColorBuffer: any) {
@@ -113,13 +186,14 @@ function createFullscreenPass(device: GPUDevice, presentationSize: number[], pre
 }
 
 
-function createRasterizerPass(device: GPUDevice, presentationSize: number[], strokeData: Float32Array) {
+function createRasterizerPass(device: GPUDevice, presentationSize: number[], strokeData: Float32Array, strokeType: number, cameraCtrl?: CameraControl) {
     const [WIDTH, HEIGHT] = presentationSize
     const [TILE_COUNT_X, TILE_COUNT_Y] = [Math.ceil(WIDTH / 16), Math.ceil(HEIGHT / 16)]
 
     // const NUMBER_PRE_ELEMENT = 3 * 4     // triangle, 3 vertex, (3 + 1) f32 per vertex
     //const NUMBER_PRE_ELEMENT = 20           // transform 4x4 f32, color 3 f32, density 1 f32
-    const NUMBER_PRE_ELEMENT = 22           // Capsule
+    //const NUMBER_PRE_ELEMENT = 22           // Capsule
+    const NUMBER_PRE_ELEMENT = strokeType == 5 ? 22 : 20;
     const strokeCount = strokeData.length / NUMBER_PRE_ELEMENT
     const strokeBuffer = device.createBuffer({ size: strokeData.byteLength, usage: GPUBufferUsage.STORAGE, mappedAtCreation: true, })
     new Float32Array(strokeBuffer.getMappedRange()).set(strokeData);
@@ -174,17 +248,19 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         compute: { module: computeRasterizerModule, entryPoint: "rasterize" }
     })
 
-    const cameraCtrl: CameraControl = new CameraWander(WIDTH, HEIGHT)
+    if (cameraCtrl === undefined) {
+        cameraCtrl = new CameraWander(WIDTH, HEIGHT);
+    }
 
     const addRasterizerPass = (commandEncoder: GPUCommandEncoder) => {
 
         const mvp = cameraCtrl.getMVP()
         const mv = cameraCtrl.getMV()
         //console.log(mvp, [WIDTH, HEIGHT])
-        
+
         device.queue.writeBuffer(UBOBuffer, 0, new Uint32Array([WIDTH, HEIGHT]).buffer)
-        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([5, ]).buffer)
-        device.queue.writeBuffer(UBOBuffer, 12, new Uint32Array([strokeCount, ]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([strokeType,]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 12, new Uint32Array([strokeCount,]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
         device.queue.writeBuffer(UBOBuffer, 80, (mv as Float32Array).buffer)
 
@@ -204,7 +280,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         cmd.end()
     }
 
-    return { addRasterizerPass, outputBuffer }
+    return { addRasterizerPass, outputBuffer, cameraCtrl }
 }
 
 abstract class CameraControl {
@@ -244,10 +320,36 @@ abstract class CameraControl {
 //     }
 // }
 
+class CameraCustom extends CameraControl {
+    viewMatrix: mat4;
+    modelMatrix: mat4;
+    projectionMatrix: mat4;
+
+    constructor() {
+        super()
+        this.modelMatrix = mat4.create()
+        this.viewMatrix = mat4.create()
+        this.projectionMatrix = mat4.create()
+    }
+
+    getMVP(): mat4 {
+        const mvp = mat4.create()
+        mat4.multiply(mvp, this.projectionMatrix, this.getMV())
+        return mvp
+    }
+    getMV(): mat4 {
+        const mv = mat4.create()
+        mat4.multiply(mv, this.viewMatrix, this.modelMatrix)
+        return mv
+    }
+
+}
+
 class CameraWander extends CameraControl {
     distance: number;
     intersect: vec3;
     rotate: vec3;
+    modelMatrix: mat4;
     projectionMatrix: mat4;
 
 
@@ -256,6 +358,8 @@ class CameraWander extends CameraControl {
         const aspect = WIDTH / HEIGHT
         this.projectionMatrix = mat4.create()
         mat4.perspective(this.projectionMatrix, 0.5 * Math.PI, aspect, 0.01, 100.0)
+        this.modelMatrix = mat4.create()
+        mat4.rotate(this.modelMatrix, this.modelMatrix, Math.PI / 2, vec3.fromValues(1, 0, 0))
         this.distance = 5.5
         this.intersect = vec3.fromValues(0, 0, 0)
         this.rotate = vec3.fromValues(0, 0, 0)
@@ -292,8 +396,8 @@ class CameraWander extends CameraControl {
                 vec3.transformQuat(dir_y, vec3.fromValues(0, 1, 0), q)
                 let dir_x = vec3.create()
                 vec3.cross(dir_x, dir_y, dir_z)
-                vec3.normalize(dir_x, dir_x) 
-                vec3.normalize(dir_y, dir_y) 
+                vec3.normalize(dir_x, dir_x)
+                vec3.normalize(dir_y, dir_y)
                 vec3.scaleAndAdd(_this.intersect, _this.intersect, dir_x, dx * ax)
                 vec3.scaleAndAdd(_this.intersect, _this.intersect, dir_y, dy * ay)
             }
@@ -329,11 +433,8 @@ class CameraWander extends CameraControl {
         const viewMatrix = mat4.create()
         mat4.lookAt(viewMatrix, m_eye, m_center, m_up)
 
-        const modelMatrix = mat4.create()
-        mat4.rotate(modelMatrix, modelMatrix, Math.PI / 2, vec3.fromValues(1, 0, 0))
-
         const modelViewMatrix = <Float32Array>mat4.create()
-        mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix)
+        mat4.multiply(modelViewMatrix, viewMatrix, this.modelMatrix)
         return modelViewMatrix
     }
 }

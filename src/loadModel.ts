@@ -1,11 +1,11 @@
 import { mat4, vec3, quat } from 'gl-matrix';
 //import { WebIO } from '@gltf-transform/core';
 //@ts-ignore
-import modelData from '../models/lego_bezier_max/stroke.json'
+//import modelData from '../models/lego_bezier_max/stroke.json'
 //import modelData from '../models/lego_octahedron_max/stroke.json'
 //import modelData from '../models/lego_tetrahedron_max/stroke.json'
 //import modelData from '../models/lego_cube_max/stroke.json'
-//import modelData from '../models/lego_ellipsoid_max/stroke.json'
+import modelData from '../models/lego_ellipsoid_max/stroke.json'
 // import modelData from '../models/lego_ellipsoid_500_strokes/stroke.json'
 //import modelUrl from '../models/suzanne.glb?url';
 //import modelUrl from '../models/box.gltf?url';
@@ -47,7 +47,7 @@ function getEuler(out: vec3, quat: quat) {
 	return out;
 }
 
-export async function loadModel() {
+export async function loadModel() : Promise<[Float32Array, number]> {
 
 	const finalPositions = [];
 
@@ -182,5 +182,14 @@ export async function loadModel() {
 		}
 	}
 
-	return new Float32Array(finalPositions);
+	const primitiveTypeTable: { [key: string]: number } = {
+		"ellipsoid": 1,
+		"cube": 2,
+		"tetrahedron": 3,
+		"octahedron": 4,
+		"capsule": 5,
+		"cubic_bezier": 5,
+	};
+
+	return [new Float32Array(finalPositions), primitiveTypeTable[modelData.shape_type]];
 }

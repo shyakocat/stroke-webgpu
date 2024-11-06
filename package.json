@@ -6,17 +6,25 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve": "set VITE_EXEC_MODE=test&& vite-node serve/server.ts"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
     "@types/stats": "^0.16.30",
     "@webgpu/types": "^0.1.43",
     "typescript": "^5.2.2",
-    "vite": "^5.3.1"
+    "vite": "^5.3.1",
+    "vite-node": "^2.1.4"
   },
   "dependencies": {
     "@gltf-transform/core": "^4.0.2",
+    "colors-console": "^1.0.3",
+    "express": "^4.21.1",
     "gl-matrix": "^3.4.3",
-    "stats.js": "^0.17.0"
+    "multer": "^1.4.5-lts.1",
+    "stats.js": "^0.17.0",
+    "vite-express": "^0.19.0"
   }
 }
