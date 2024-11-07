@@ -71,7 +71,11 @@ async function init(mode: "viewer" | "test" = "viewer") {
 
         const [WIDTH, HEIGHT] = presentationSize;
         cam.projectionMatrix = mat4.create()
-        mat4.perspective(cam.projectionMatrix, testData.camera_angle_x, WIDTH / HEIGHT, 0.01, 100)
+        mat4.perspective(cam.projectionMatrix, testData.camera_angle_x, WIDTH / HEIGHT, 0.01, 10)
+
+        const magic_scale = 1.5
+        cam.modelMatrix = mat4.create();
+        mat4.scale(cam.modelMatrix, cam.modelMatrix, vec3.fromValues(magic_scale, magic_scale, magic_scale));
 
         const frameIter = testData.frames[Symbol.iterator]()
 
