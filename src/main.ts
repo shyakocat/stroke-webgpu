@@ -151,7 +151,7 @@ function createFullscreenPass(device: GPUDevice, presentationSize: number[], pre
         primitive: { topology: "triangle-list" }
     })
 
-    const uniformBufferSize = 4 * 2;    // screenWidth, screenHeight
+    const uniformBufferSize = 4 * 3;    // screenWidth, screenHeight, enableFXAA
     const uniformBuffer = device.createBuffer({ size: uniformBufferSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST })
 
     const fullscreenQuadBindGroup = device.createBindGroup({
@@ -173,6 +173,7 @@ function createFullscreenPass(device: GPUDevice, presentationSize: number[], pre
 
     const addFullscreenPass = (context: GPUCanvasContext, commandEncoder: GPUCommandEncoder) => {
         device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([presentationSize[0], presentationSize[1]]));
+        device.queue.writeBuffer(uniformBuffer, 8, new Int32Array([1, ]));
 
         renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
 
@@ -193,8 +194,8 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
 
     // const NUMBER_PRE_ELEMENT = 3 * 4     // triangle, 3 vertex, (3 + 1) f32 per vertex
     //const NUMBER_PRE_ELEMENT = 20           // transform 4x4 f32, color 3 f32, density 1 f32
-    //const NUMBER_PRE_ELEMENT = 22           // Capsule
-    const NUMBER_PRE_ELEMENT = strokeType == 5 ? 22 : 20;
+    //const NUMBER_PRE_ELEMENT = 23           // Capsule
+    const NUMBER_PRE_ELEMENT = strokeType == 5 ? 23 : 20;
     const strokeCount = strokeData.length / NUMBER_PRE_ELEMENT
     const strokeBuffer = device.createBuffer({ size: strokeData.byteLength, usage: GPUBufferUsage.STORAGE, mappedAtCreation: true, })
     new Float32Array(strokeBuffer.getMappedRange()).set(strokeData);

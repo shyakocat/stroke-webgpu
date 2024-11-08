@@ -51,7 +51,7 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 
 	const finalPositions = [];
 
-	// modelData.shape_type = "cubic_bezier"
+	// modelData.shape_type = "capsule"
 	// modelData.stroke_params = {
 	// 	// "strokeNo.1": {
 	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
@@ -73,21 +73,21 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 	// 	// 	color_params: [0, 0, 1.0],
 	// 	// 	density_params: 1.0,
 	// 	// },
-	// 	"strokeNo.5": {
-	// 		shape_params: [0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 0.1, 0.1],
-	// 		color_params: [1.0, 0, 0],
-	// 		density_params: 1.0,
-	// 	},
+	// 	// "strokeNo.5": {
+	// 	// 	shape_params: [0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 0.1, 0.1],
+	// 	// 	color_params: [1.0, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
 	// 	// "strokeNo.6": {
 	// 	// 	shape_params: [1.0, 0, 0, 0, 0, 0, 0, 0.1, 2],
 	// 	// 	color_params: [0, 1, 0],
 	// 	// 	density_params: 1.0,
 	// 	// },
-	// 	// "strokeNo.7": {
-	// 	// 	shape_params: [1.0, 0, 0, 0, 0, 0, 1, 0.1, 2],
-	// 	// 	color_params: [1, 0, 0],
-	// 	// 	density_params: 1.0,
-	// 	// },
+	// 	"strokeNo.7": {
+	// 		shape_params: [1.0, 0, 0, 0, 0, 0, 1, 0.1, 0.5, 2],
+	// 		color_params: [1, 0, 0],
+	// 		density_params: 1.0,
+	// 	},
 	// }
 
 	if (modelData.shape_type === "cubic_bezier") {
@@ -109,7 +109,8 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 				let t2 = (i + 1) / PARTITION_COUNT;
 				vec3.bezier(e1, p0, p1, p2, p3, t1);
 				vec3.bezier(e2, p0, p1, p2, p3, t2);
-				let radius = ra + (rb - ra) * (t1 + t2) * 0.5;
+				let _r1 = ra + (rb - ra) * t1;
+				let _r2 = ra + (rb - ra) * t2;
 				let e0 = vec3.create();								// center point of capsule
 				vec3.add(e0, e1, e2);
 				vec3.scale(e0, e0, 0.5);
@@ -126,7 +127,7 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 				let ea = vec3.create();
 				getEuler(ea, _q);
 				params[`strokeNo.${++strokeNo}`] = {
-					shape_params: [1, ea[1], ea[0], ea[2], ...e0, radius, vec3.len(d),],
+					shape_params: [1, ea[1], ea[0], ea[2], ...e0, _r1, _r2, vec3.len(d),],
 					color_params: o.color_params,
 					density_params: o.density_params,
 				}
@@ -178,7 +179,7 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 			finalPositions.push(...m);
 			finalPositions.push(...o.color_params);
 			finalPositions.push(o.density_params);
-			finalPositions.push(ps[7], ps[8]);
+			finalPositions.push(ps[7], ps[8], ps[9]);
 		}
 	}
 

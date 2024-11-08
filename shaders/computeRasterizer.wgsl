@@ -22,7 +22,7 @@ struct Sphere { base: Entity, };                    // Support 球体
 struct Cube { base: Entity, };                      // Support 立方体
 struct Tetrahedron { base: Entity, };               // Support 四面体
 struct Octahedron { base: Entity, };                // Support 八面体
-struct Capsule { base: Entity, radius: f32, length: f32, }    // 胶囊体
+struct Capsule { base: Entity, ra: f32, rb: f32, length: f32, }    // Support 胶囊体
 
 struct UBO {            // align(16) size(96)
     screenWidth: u32,
@@ -86,6 +86,8 @@ fn inverse(m: mat4x4f) -> mat4x4f {
     ) * (1 / det);
 }
 
+fn sqr(x: f32) -> f32 { return x * x; }
+
 fn getEntity(index: u32) -> Entity {
     var e: Entity;
     e.transform = mat4x4<f32>(
@@ -126,7 +128,7 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
         index = global_id.x * 20u;
     } else { 
         // Capsule
-        index = global_id.x * 22u;
+        index = global_id.x * 23u;
     }
     var base: Entity;
     base = getEntity(index);
@@ -143,8 +145,8 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
         );
     } else { 
         // Capsule
-        let r = strokeBuffer.data[index + 20u];
-        let l = strokeBuffer.data[index + 21u] * 0.5;
+        let r = max(strokeBuffer.data[index + 20u], strokeBuffer.data[index + 21u]);
+        let l = strokeBuffer.data[index + 22u] * 0.5;
         let h = l + r;
         cubes = array<vec3<f32>, 8>(
             vec3<f32>(-r, -r, -h), vec3<f32>(-r, -r, h),
@@ -496,11 +498,15 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     } else if uniforms.strokeType == 5 {
         // Capsule
         for (var i: u32 = 0; i < listCount; i++) {
-            let index = binBuffer.id[indexBias + i] * 22u;
+            let index = binBuffer.id[indexBias + i] * 23u;
             var data: Capsule;
             data.base = getEntity(index);
-            data.radius = strokeBuffer.data[index + 20u];
-            data.length = strokeBuffer.data[index + 21u];
+            data.ra = strokeBuffer.data[index + 20u];
+            data.rb = strokeBuffer.data[index + 21u];
+            data.length = strokeBuffer.data[index + 22u];
+            let ra = data.ra;
+            let rb = data.rb;
+            let l = data.length;
             let m = uniforms.modelViewProjectionMatrix * data.base.transform;
             let m_inv = inverse(m);
             var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
@@ -515,11 +521,12 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var solutionCount: u32 = 0;
             var solutions: array<f32, 6>;
             // 判断中间圆柱体
+            // Solve:  x^2 + y^2 = r(z)^2
                 {
                 let ret = solve_quadratic_eqation(
-                    dot(u.xy, u.xy),
-                    2 * dot(u.xy, v.xy),
-                    dot(v.xy, v.xy) - data.radius * data.radius
+                    dot(u.xy, u.xy) - sqr((rb - ra) * u.z / l),
+                    2 * dot(u.xy, v.xy) + (ra - rb) * u.z * (l * (ra + rb) + 2 * (rb - ra) * v.z) / (l * l),
+                    dot(v.xy, v.xy) - sqr(l * (ra + rb) + 2 * (rb - ra) * v.z) / (4 * l * l)
                 );
                 if ret.hasAnswer {
                     let _p1 = u * (ret.answer.x) + v;
@@ -532,7 +539,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
             // 判断靠近A端
                 {
-                let ret = solve_quadratic_eqation(dot(u, u), 2 * dot(u, v - A), dot(v - A, v - A) - data.radius * data.radius);
+                let ret = solve_quadratic_eqation(dot(u, u), 2 * dot(u, v - A), dot(v - A, v - A) - ra * ra);
                 if ret.hasAnswer {
                     let _p1 = u * (ret.answer.x) + v;
                     let _p2 = u * (ret.answer.y) + v;
@@ -544,7 +551,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
             // 判断靠近B端
                 {
-                let ret = solve_quadratic_eqation(dot(u, u), 2 * dot(u, v - B), dot(v - B, v - B) - data.radius * data.radius);
+                let ret = solve_quadratic_eqation(dot(u, u), 2 * dot(u, v - B), dot(v - B, v - B) - rb * rb);
                 if ret.hasAnswer {
                     let _p1 = u * (ret.answer.x) + v;
                     let _p2 = u * (ret.answer.y) + v;
