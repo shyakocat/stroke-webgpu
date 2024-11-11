@@ -11,6 +11,8 @@ import testData from '../test/transforms_test.json';
 
 type Tuple16<T> = [T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T];
 
+const ENABLE_FXAA = 0;
+
 //@ts-ignore
 const mode = import.meta.env.VITE_EXEC_MODE === "test" ? "test" : "viewer";
 init(mode);
@@ -173,7 +175,7 @@ function createFullscreenPass(device: GPUDevice, presentationSize: number[], pre
 
     const addFullscreenPass = (context: GPUCanvasContext, commandEncoder: GPUCommandEncoder) => {
         device.queue.writeBuffer(uniformBuffer, 0, new Float32Array([presentationSize[0], presentationSize[1]]));
-        device.queue.writeBuffer(uniformBuffer, 8, new Int32Array([1, ]));
+        device.queue.writeBuffer(uniformBuffer, 8, new Int32Array([ENABLE_FXAA, ]));
 
         renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
 

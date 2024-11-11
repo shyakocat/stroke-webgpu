@@ -87,5 +87,5 @@ fn frag_main(@builtin(position) coord: vec4<f32>) -> @location(0) vec4<f32> {
     let X = i32(floor(coord.x));
     let Y = i32(floor(coord.y));
     if uniforms.enableFXAA != 0 { return fxaa(X, Y); }
-    return sample2D(coord.xy);
+    return raw2D(X, Y);
 }

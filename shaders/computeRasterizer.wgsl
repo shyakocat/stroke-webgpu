@@ -1,3 +1,6 @@
+const OVERLAY_METHOD_MAX = 1;
+const OVERLAY_METHOD_SOFTMAX = 2;
+
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
 const STROKE_MAX_COUNT = 4;                             // 每个像素采样的个数
@@ -6,6 +9,8 @@ const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
 const BACKGROUND_COLOR = vec4f(1, 1, 1, 1);
 const eps = 1e-5;
+const OVERLAY_METHOD = OVERLAY_METHOD_SOFTMAX;
+const OVERLAY_METHOD_SOFTMAX_TAO = 0.05;
 
 struct LightPillar {
     key: f32,
@@ -601,21 +606,47 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     var fragCount: u32 = 0;
-    for (var i: u32 = 0; i < sampleCount * 2; i++) {
-        if i > 0 {
-            var k: i32 = -1;
-            for (var j: i32 = 0; j < i32(sampleCount); j++) {
-                if bitset[j] && (k == -1 || samples[j].density * samples[j].length > samples[k].density * samples[k].length) { k = j; }
+    if OVERLAY_METHOD == OVERLAY_METHOD_MAX {
+        for (var i: u32 = 0; i < sampleCount * 2; i++) {
+            if i > 0 {
+                var k: i32 = -1;
+                for (var j: i32 = 0; j < i32(sampleCount); j++) {
+                    if bitset[j] && (k == -1 || samples[j].density * samples[j].length > samples[k].density * samples[k].length) { k = j; }
+                }
+                if k != -1 {
+                    frags[fragCount].density = samples[k].density;
+                    frags[fragCount].color = samples[k].color;
+                    frags[fragCount].depth = pairs[i - 1].key;
+                    frags[fragCount].length = pairs[i].key - pairs[i - 1].key;
+                    fragCount++;
+                }
             }
-            if k != -1 {
-                frags[fragCount].density = samples[k].density;
-                frags[fragCount].color = samples[k].color;
-                frags[fragCount].depth = pairs[i - 1].key;
-                frags[fragCount].length = pairs[i].key - pairs[i - 1].key;
-                fragCount++;
-            }
+            bitset[pairs[i].value] = !bitset[pairs[i].value];
         }
-        bitset[pairs[i].value] = !bitset[pairs[i].value];
+    } else if OVERLAY_METHOD == OVERLAY_METHOD_SOFTMAX {
+        for (var i: u32 = 0; i < sampleCount * 2; i++) {
+            if i > 0 {
+                var sum: f32 = 0;
+                var frag: LightPillar;
+                frag.depth = pairs[i - 1].key;
+                frag.length = pairs[i].key - pairs[i - 1].key;
+                for (var j: i32 = 0; j < i32(sampleCount); j++) {
+                    if bitset[j] {
+                        let w = exp(samples[j].density * samples[j].length / OVERLAY_METHOD_SOFTMAX_TAO);
+                        sum += w;
+                        frag.color += w * samples[j].color;
+                        frag.density += w * samples[j].density;
+                    }
+                }
+                if sum > 0 {
+                    frag.color /= sum;
+                    frag.density /= sum;
+                    frags[fragCount] = frag;
+                    fragCount++;
+                }
+            }
+            bitset[pairs[i].value] = !bitset[pairs[i].value];
+        }
     }
     if fragCount == 0 { return; }
     // I(s) = \sum_{n=1}^N    T(n) * (1 - exp(-sigma_n * delta_n)) * c_n    
