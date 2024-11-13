@@ -37,4 +37,4 @@ npm run serve
 + `src/loadModel.ts`: `PARITION_COUNT`, count of cubic bezier transform into capsules. 贝塞尔曲线分段数。
 + `shaders/computeRasterizer.wgsl`: `BACKGROUND_COLOR`, background color. 背景颜色。
 + `src/main.ts`: `ENABLE_FXAA`, 开启FXAA抗锯齿。
-+ `shaders/computeRasterizer.wgsl`: `OVERLAY_METHOD`，设置叠加模式。
++ `shaders/computeRasterizer.wgsl`: `COMPOSITION_METHOD`，设置叠加模式。

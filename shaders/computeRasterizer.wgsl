@@ -1,16 +1,17 @@
-const OVERLAY_METHOD_MAX = 1;
-const OVERLAY_METHOD_SOFTMAX = 2;
+const COMPOSITION_METHOD_OVERLAY = 0;   // Not Support
+const COMPOSITION_METHOD_MAX = 1;
+const COMPOSITION_METHOD_SOFTMAX = 2;
 
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 4;                             // 每个像素采样的个数
+const STROKE_MAX_COUNT = 64;                             // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
 const BACKGROUND_COLOR = vec4f(1, 1, 1, 1);
 const eps = 1e-5;
-const OVERLAY_METHOD = OVERLAY_METHOD_SOFTMAX;
-const OVERLAY_METHOD_SOFTMAX_TAO = 0.05;
+const COMPOSITION_METHOD = COMPOSITION_METHOD_OVERLAY;
+const COMPOSITION_METHOD_SOFTMAX_TAO = 0.05;
 
 struct LightPillar {
     key: f32,
@@ -606,7 +607,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     var fragCount: u32 = 0;
-    if OVERLAY_METHOD == OVERLAY_METHOD_MAX {
+    if COMPOSITION_METHOD == COMPOSITION_METHOD_MAX {
         for (var i: u32 = 0; i < sampleCount * 2; i++) {
             if i > 0 {
                 var k: i32 = -1;
@@ -623,16 +624,19 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
             bitset[pairs[i].value] = !bitset[pairs[i].value];
         }
-    } else if OVERLAY_METHOD == OVERLAY_METHOD_SOFTMAX {
+    } else if COMPOSITION_METHOD == COMPOSITION_METHOD_SOFTMAX {
         for (var i: u32 = 0; i < sampleCount * 2; i++) {
             if i > 0 {
                 var sum: f32 = 0;
                 var frag: LightPillar;
                 frag.depth = pairs[i - 1].key;
                 frag.length = pairs[i].key - pairs[i - 1].key;
+                frag.density = 0;
+                frag.color = vec3f(0);
                 for (var j: i32 = 0; j < i32(sampleCount); j++) {
                     if bitset[j] {
-                        let w = exp(samples[j].density * samples[j].length / OVERLAY_METHOD_SOFTMAX_TAO);
+                        let alpha = 1 - exp(-samples[j].density * samples[j].length);
+                        let w = exp(alpha / COMPOSITION_METHOD_SOFTMAX_TAO);
                         sum += w;
                         frag.color += w * samples[j].color;
                         frag.density += w * samples[j].density;
@@ -641,6 +645,33 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 if sum > 0 {
                     frag.color /= sum;
                     frag.density /= sum;
+                    frags[fragCount] = frag;
+                    fragCount++;
+                }
+            }
+            bitset[pairs[i].value] = !bitset[pairs[i].value];
+        }
+    }
+    else if COMPOSITION_METHOD == COMPOSITION_METHOD_OVERLAY {
+        for (var i: u32 = 0; i < sampleCount * 2; i++) {
+            if i > 0 {
+                var T: f32 = 1;
+                var frag: LightPillar;
+                frag.depth = pairs[i - 1].key;
+                frag.length = pairs[i].key - pairs[i - 1].key;
+                frag.density = 0;
+                frag.color = vec3f(0);
+                for (var j: i32 = 0; j < i32(sampleCount); j++) {
+                    if bitset[j] {
+                        let alpha = 1 - exp(-samples[j].density * samples[j].length);
+                        frag.color += samples[j].color * alpha * T;
+                        frag.density += samples[j].density * alpha * T;
+                        T *= 1 - alpha;
+                    }
+                }
+                if T < 1 {
+                    //frag.density /= 1 - T;
+                    frag.color /= 1 - T;
                     frags[fragCount] = frag;
                     fragCount++;
                 }
@@ -660,7 +691,8 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
         irradiance += exp(occlusion) * (1 - exp(-sigma * delta)) * c;
         occlusion += -sigma * delta;
     }
-    irradiance /= 1 - exp(occlusion);   // ref: https://arxiv.org/abs/2311.15637
+    irradiance += exp(occlusion) * BACKGROUND_COLOR.xyz;
+    //irradiance /= 1 - exp(occlusion);   // ref: https://arxiv.org/abs/2311.15637
     outputBuffer.pixels[pixelId] = vec4f(irradiance, 1.0f);
     //outputBuffer.pixels[pixelId] = vec4f(vec3f(-frags[4].length * 20), 1.0f);
     //outputBuffer.pixels[pixelId] = vec4f(frags[0].color, 1.0f);

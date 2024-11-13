@@ -1,6 +1,7 @@
 import { mat4, vec3, quat } from 'gl-matrix';
 //import { WebIO } from '@gltf-transform/core';
 //@ts-ignore
+//import modelData from '../models/lego_ellipsoid_softmax/stroke.json'
 //import modelData from '../models/lego_bezier_max/stroke.json'
 //import modelData from '../models/lego_octahedron_max/stroke.json'
 //import modelData from '../models/lego_tetrahedron_max/stroke.json'
