@@ -51,7 +51,7 @@ async function init(mode: "viewer" | "test" = "viewer") {
 
         function draw() {
 
-            stats.begin()
+            //stats.begin()
 
             const commandEncoder = device.createCommandEncoder();
 
@@ -60,7 +60,8 @@ async function init(mode: "viewer" | "test" = "viewer") {
 
             device.queue.submit([commandEncoder.finish()]);
 
-            stats.end()
+            //stats.end()
+            stats.update()
 
             requestAnimationFrame(draw);
         }
