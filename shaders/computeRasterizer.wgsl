@@ -1,10 +1,10 @@
-const COMPOSITION_METHOD_OVERLAY = 0;   // Not Support
+const COMPOSITION_METHOD_OVERLAY = 0;  
 const COMPOSITION_METHOD_MAX = 1;
-const COMPOSITION_METHOD_SOFTMAX = 2;
+const COMPOSITION_METHOD_SOFTMAX = 2;   // Not Support
 
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 64;                             // 每个像素采样的个数
+const STROKE_MAX_COUNT = 64;                            // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
@@ -18,6 +18,7 @@ struct LightPillar {
     depth: f32,
     length: f32,
     density: f32,
+    id: u32,
     color: vec3<f32>,
 };
 
@@ -295,6 +296,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
             var tmp: LightPillar;
+            tmp.id = index;
             tmp.color = data.base.color.xyz;
             tmp.density = data.base.color.w;
             tmp.depth = d1;
@@ -352,6 +354,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
             var tmp: LightPillar;
+            tmp.id = index;
             tmp.color = data.base.color.xyz;
             tmp.density = data.base.color.w;
             tmp.depth = d1;
@@ -417,6 +420,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
             var tmp: LightPillar;
+            tmp.id = index;
             tmp.color = data.base.color.xyz;
             tmp.density = data.base.color.w;
             tmp.depth = d1;
@@ -488,6 +492,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
             var tmp: LightPillar;
+            tmp.id = index;
             tmp.color = data.base.color.xyz;
             tmp.density = data.base.color.w;
             tmp.depth = d1;
@@ -576,6 +581,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
             var tmp: LightPillar;
+            tmp.id = index;
             tmp.color = data.base.color.xyz;
             tmp.density = data.base.color.w;
             tmp.depth = d1;
@@ -594,6 +600,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var frags: array<LightPillar, STROKE_MAX_COUNT_MUL_2>;
     var pairs: array<Pair, STROKE_MAX_COUNT_MUL_2>;
     var bitset: array<bool, STROKE_MAX_COUNT>;
+    var buf: array<u32, STROKE_MAX_COUNT>;
     for (var i: u32 = 0; i < sampleCount; i++) {
         bitset[i] = false;
         pairs[i * 2    ].key = samples[i].depth;
@@ -651,25 +658,32 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
             bitset[pairs[i].value] = !bitset[pairs[i].value];
         }
-    }
-    else if COMPOSITION_METHOD == COMPOSITION_METHOD_OVERLAY {
+    } else if COMPOSITION_METHOD == COMPOSITION_METHOD_OVERLAY {
+        for (var j: u32 = 0; j < sampleCount; j++) { buf[j] = j; }
+        for (var j: u32 = 0; j < sampleCount; j++) {
+            for (var k: u32 = j + 1; k < sampleCount; k++) {
+                if samples[buf[j] ].id < samples[buf[k] ].id { var t = buf[j]; buf[j] = buf[k]; buf[k] = t; }
+            }
+        }
         for (var i: u32 = 0; i < sampleCount * 2; i++) {
             if i > 0 {
+                var has: bool = false;
                 var T: f32 = 1;
                 var frag: LightPillar;
                 frag.depth = pairs[i - 1].key;
                 frag.length = pairs[i].key - pairs[i - 1].key;
                 frag.density = 0;
                 frag.color = vec3f(0);
-                for (var j: i32 = 0; j < i32(sampleCount); j++) {
-                    if bitset[j] {
-                        let alpha = 1 - exp(-samples[j].density * samples[j].length);
-                        frag.color += samples[j].color * alpha * T;
-                        frag.density += samples[j].density * alpha * T;
-                        T *= 1 - alpha;
-                    }
+                for (var j: u32 = 0; j < sampleCount; j++) {
+                    var k = buf[j];
+                    //let alpha = 1 - exp(-samples[k].density * samples[k].length);
+                    var alpha: f32;
+                    if bitset[k] { alpha = 1.0; has = true; } else { alpha = 0.0; }
+                    frag.color += samples[k].color * alpha * T;
+                    frag.density += samples[k].density * alpha * T;
+                    T *= 1 - alpha;
                 }
-                if T < 1 {
+                if has {
                     //frag.density /= 1 - T;
                     frag.color /= 1 - T;
                     frags[fragCount] = frag;
