@@ -10,7 +10,7 @@ const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
 const BACKGROUND_COLOR = vec4f(1, 1, 1, 1);
 const eps = 1e-5;
-const COMPOSITION_METHOD = COMPOSITION_METHOD_OVERLAY;
+const COMPOSITION_METHOD = COMPOSITION_METHOD_SOFTMAX;
 const COMPOSITION_METHOD_SOFTMAX_TAO = 0.05;
 
 struct LightPillar {
@@ -619,7 +619,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if i > 0 {
                 var k: i32 = -1;
                 for (var j: i32 = 0; j < i32(sampleCount); j++) {
-                    if bitset[j] && (k == -1 || samples[j].density * samples[j].length > samples[k].density * samples[k].length) { k = j; }
+                    if bitset[j] && (k == -1 || samples[j].density > samples[k].density) { k = j; }
                 }
                 if k != -1 {
                     frags[fragCount].density = samples[k].density;
@@ -640,9 +640,9 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 frag.length = pairs[i].key - pairs[i - 1].key;
                 frag.density = 0;
                 frag.color = vec3f(0);
-                for (var j: i32 = 0; j < i32(sampleCount); j++) {
+                for (var j: u32 = 0; j < sampleCount; j++) {
                     if bitset[j] {
-                        let alpha = 1 - exp(-samples[j].density * samples[j].length);
+                        let alpha = 1.0f;
                         let w = exp(alpha / COMPOSITION_METHOD_SOFTMAX_TAO);
                         sum += w;
                         frag.color += w * samples[j].color;
@@ -659,34 +659,17 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             bitset[pairs[i].value] = !bitset[pairs[i].value];
         }
     } else if COMPOSITION_METHOD == COMPOSITION_METHOD_OVERLAY {
-        for (var j: u32 = 0; j < sampleCount; j++) { buf[j] = j; }
-        for (var j: u32 = 0; j < sampleCount; j++) {
-            for (var k: u32 = j + 1; k < sampleCount; k++) {
-                if samples[buf[j] ].id < samples[buf[k] ].id { var t = buf[j]; buf[j] = buf[k]; buf[k] = t; }
-            }
-        }
         for (var i: u32 = 0; i < sampleCount * 2; i++) {
             if i > 0 {
-                var has: bool = false;
-                var T: f32 = 1;
-                var frag: LightPillar;
-                frag.depth = pairs[i - 1].key;
-                frag.length = pairs[i].key - pairs[i - 1].key;
-                frag.density = 0;
-                frag.color = vec3f(0);
-                for (var j: u32 = 0; j < sampleCount; j++) {
-                    var k = buf[j];
-                    //let alpha = 1 - exp(-samples[k].density * samples[k].length);
-                    var alpha: f32;
-                    if bitset[k] { alpha = 1.0; has = true; } else { alpha = 0.0; }
-                    frag.color += samples[k].color * alpha * T;
-                    frag.density += samples[k].density * alpha * T;
-                    T *= 1 - alpha;
+                var k: i32 = -1;
+                for (var j: i32 = 0; j < i32(sampleCount); j++) {
+                    if bitset[j] && (k == -1 || samples[j].id > samples[k].id) { k = j; }
                 }
-                if has {
-                    //frag.density /= 1 - T;
-                    frag.color /= 1 - T;
-                    frags[fragCount] = frag;
+                if k != -1 {
+                    frags[fragCount].density = samples[k].density;
+                    frags[fragCount].color = samples[k].color;
+                    frags[fragCount].depth = pairs[i - 1].key;
+                    frags[fragCount].length = pairs[i].key - pairs[i - 1].key;
                     fragCount++;
                 }
             }

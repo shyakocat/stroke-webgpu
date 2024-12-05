@@ -1,13 +1,13 @@
 import { mat4, vec3, quat } from 'gl-matrix';
 //import { WebIO } from '@gltf-transform/core';
 //@ts-ignore
-//import modelData from '../models/lego_ellipsoid_softmax/stroke.json'
+import modelData from '../models/lego_ellipsoid_softmax/stroke.json'
 //import modelData from '../models/lego_bezier_max/stroke.json'
 //import modelData from '../models/lego_octahedron_max/stroke.json'
 //import modelData from '../models/lego_tetrahedron_max/stroke.json'
 //import modelData from '../models/lego_cube_max/stroke.json'
 //import modelData from '../models/lego_ellipsoid_max/stroke.json'
-import modelData from '../models/lego_ellipsoid_500_strokes/stroke.json'
+//import modelData from '../models/lego_ellipsoid_500_strokes/stroke.json'
 //import modelUrl from '../models/suzanne.glb?url';
 //import modelUrl from '../models/box.gltf?url';
 
