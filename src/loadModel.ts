@@ -1,7 +1,8 @@
 import { mat4, vec3, quat } from 'gl-matrix';
 //import { WebIO } from '@gltf-transform/core';
 //@ts-ignore
-import modelData from '../models/lego_ellipsoid_softmax/stroke.json'
+import modelData from '../models/lego_mix_ellipsoid_tetrahedron/temp.json'
+//import modelData from '../models/lego_ellipsoid_softmax/stroke.json'
 //import modelData from '../models/lego_bezier_max/stroke.json'
 //import modelData from '../models/lego_octahedron_max/stroke.json'
 //import modelData from '../models/lego_tetrahedron_max/stroke.json'
@@ -48,17 +49,27 @@ function getEuler(out: vec3, quat: quat) {
 	return out;
 }
 
-export async function loadModel() : Promise<[Float32Array, number]> {
+export async function loadModel(): Promise<Float32Array> {
 
+	const ALIGN_SIZE = 25;			// max size of stroke for align
+	const PARTITION_COUNT = 10;		// count of capsules which segment from bezier
+	const primitiveTypeTable: { [key: string]: number } = {
+		"ellipsoid": 1,
+		"cube": 2,
+		"tetrahedron": 3,
+		"octahedron": 4,
+		"capsule": 5,
+		"cubic_bezier": 5,
+	};
 	const finalPositions = [];
 
-	// modelData.shape_type = "capsule"
+	// modelData.shape_type = "ellipsoid"
 	// modelData.stroke_params = {
-	// 	// "strokeNo.1": {
-	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
-	// 	// 	color_params: [1.0, 0, 0],
-	// 	// 	density_params: 1.0,
-	// 	// },
+	// 	"strokeNo.1": {
+	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
+	// 		color_params: [1.0, 0, 0],
+	// 		density_params: 1.0,
+	// 	},
 	// 	// "strokeNo.2": {
 	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -2, 0, 0, 1.0, 0.6],
 	// 	// 	color_params: [0, 1.0, 0],
@@ -84,18 +95,20 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 	// 	// 	color_params: [0, 1, 0],
 	// 	// 	density_params: 1.0,
 	// 	// },
-	// 	"strokeNo.7": {
-	// 		shape_params: [1.0, 0, 0, 0, 0, 0, 1, 0.1, 0.5, 2],
-	// 		color_params: [1, 0, 0],
-	// 		density_params: 1.0,
-	// 	},
+	// 	// "strokeNo.7": {
+	// 	// 	shape_params: [1.0, 0, 0, 0, 0, 0, 1, 0.1, 0.5, 2],
+	// 	// 	color_params: [1, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
 	// }
 
-	if (modelData.shape_type === "cubic_bezier") {
-		const PARTITION_COUNT = 10;
-		let strokeNo = 0;
-		let params: any = {};
-		for (let o of Object.values(modelData.stroke_params)) {
+	for (let [strokeNo, o] of Object.entries(modelData.stroke_params)) {
+		const m = /strokeNo.(\d+)/.exec(strokeNo);
+		if (m === null) { continue; }
+		const stroke_id = Number(m[1]);
+		const shape_type = modelData.shape_type === 'mix' ? o.stroke_type : modelData.shape_type;
+		const shape_type_id = primitiveTypeTable[shape_type];
+		if (shape_type === "cubic_bezier") {
 			let ps = o.shape_params;
 			let p0 = vec3.fromValues(ps[0], ps[1], ps[2]);
 			let p1 = vec3.fromValues(ps[3], ps[4], ps[5]);
@@ -127,19 +140,25 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 				quat.setAxisAngle(_q, rt_axis, rt_angle);
 				let ea = vec3.create();
 				getEuler(ea, _q);
-				params[`strokeNo.${++strokeNo}`] = {
-					shape_params: [1, ea[1], ea[0], ea[2], ...e0, _r1, _r2, vec3.len(d),],
-					color_params: o.color_params,
-					density_params: o.density_params,
+				{
+					let ps = [1, ea[1], ea[0], ea[2], ...e0, _r1, _r2, vec3.len(d),];
+					let m = mat4.create();
+					let s = vec3.fromValues(ps[0], ps[0], ps[0]);
+					let q = quat.create();
+					quat.fromEuler(q, ps[1] * 180 / Math.PI, ps[2] * 180 / Math.PI, ps[3] * 180 / Math.PI);
+					let t = vec3.fromValues(ps[4], ps[5], ps[6]);
+					mat4.fromRotationTranslationScale(m, q, t, s);
+					finalPositions.push(...m);
+					finalPositions.push(...o.color_params);
+					finalPositions.push(o.density_params);
+					finalPositions.push(shape_type_id);
+					finalPositions.push(stroke_id);
+					finalPositions.push(ps[7], ps[8], ps[9]);
+					while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
 				}
 			}
 		}
-		modelData.shape_type = "capsule";
-		modelData.stroke_params = params;
-	}
-
-	if (modelData.shape_type === "ellipsoid") {
-		for (let o of Object.values(modelData.stroke_params)) {
+		else if (shape_type === "ellipsoid") {
 			let ps = o.shape_params;
 			let m = mat4.create();
 			let s = vec3.fromValues(ps[0], ps[1], ps[2]);
@@ -150,12 +169,11 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 			finalPositions.push(...m);
 			finalPositions.push(...o.color_params);
 			finalPositions.push(o.density_params);
+			finalPositions.push(shape_type_id);
+			finalPositions.push(stroke_id);
+			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
 		}
-	}
-	else if (modelData.shape_type === "cube" ||
-		modelData.shape_type === "tetrahedron" ||
-		modelData.shape_type === "octahedron") {
-		for (let o of Object.values(modelData.stroke_params)) {
+		else if (shape_type === "cube" || shape_type === "tetrahedron" || shape_type === "octahedron") {
 			let ps = o.shape_params;
 			let m = mat4.create();
 			let s = vec3.fromValues(ps[0], ps[0], ps[0]);
@@ -166,10 +184,11 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 			finalPositions.push(...m);
 			finalPositions.push(...o.color_params);
 			finalPositions.push(o.density_params);
+			finalPositions.push(shape_type_id);
+			finalPositions.push(stroke_id);
+			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
 		}
-	}
-	else if (modelData.shape_type === "capsule") {
-		for (let o of Object.values(modelData.stroke_params)) {
+		else if (shape_type === "capsule") {
 			let ps = o.shape_params;
 			let m = mat4.create();
 			let s = vec3.fromValues(ps[0], ps[0], ps[0]);
@@ -180,18 +199,13 @@ export async function loadModel() : Promise<[Float32Array, number]> {
 			finalPositions.push(...m);
 			finalPositions.push(...o.color_params);
 			finalPositions.push(o.density_params);
+			finalPositions.push(shape_type_id);
+			finalPositions.push(stroke_id);
 			finalPositions.push(ps[7], ps[8], ps[9]);
+			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
 		}
 	}
 
-	const primitiveTypeTable: { [key: string]: number } = {
-		"ellipsoid": 1,
-		"cube": 2,
-		"tetrahedron": 3,
-		"octahedron": 4,
-		"capsule": 5,
-		"cubic_bezier": 5,
-	};
 
-	return [new Float32Array(finalPositions), primitiveTypeTable[modelData.shape_type]];
+	return new Float32Array(finalPositions);
 }

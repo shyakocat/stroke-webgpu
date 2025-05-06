@@ -38,10 +38,10 @@ async function init(mode: "viewer" | "test" = "viewer") {
         alphaMode: "opaque"
     });
 
-    const [strokeData, strokeType] = await loadModel();
+    const strokeData = await loadModel();
 
     const cameraCtrl = mode === "viewer" ? new CameraWander(...presentationSize) : new CameraCustom();
-    const { addRasterizerPass, outputBuffer } = createRasterizerPass(device, presentationSize, strokeData, strokeType, cameraCtrl);
+    const { addRasterizerPass, outputBuffer } = createRasterizerPass(device, presentationSize, strokeData, cameraCtrl);
     const { addFullscreenPass } = createFullscreenPass(device, presentationSize, presentationFormat, outputBuffer);
 
     if (mode === "viewer") {
@@ -191,14 +191,15 @@ function createFullscreenPass(device: GPUDevice, presentationSize: number[], pre
 }
 
 
-function createRasterizerPass(device: GPUDevice, presentationSize: number[], strokeData: Float32Array, strokeType: number, cameraCtrl?: CameraControl) {
+function createRasterizerPass(device: GPUDevice, presentationSize: number[], strokeData: Float32Array, cameraCtrl?: CameraControl) {
     const [WIDTH, HEIGHT] = presentationSize
     const [TILE_COUNT_X, TILE_COUNT_Y] = [Math.ceil(WIDTH / 16), Math.ceil(HEIGHT / 16)]
 
     // const NUMBER_PRE_ELEMENT = 3 * 4     // triangle, 3 vertex, (3 + 1) f32 per vertex
     //const NUMBER_PRE_ELEMENT = 20           // transform 4x4 f32, color 3 f32, density 1 f32
     //const NUMBER_PRE_ELEMENT = 23           // Capsule
-    const NUMBER_PRE_ELEMENT = strokeType == 5 ? 23 : 20;
+    //const NUMBER_PRE_ELEMENT = strokeType == 5 ? 23 : 20;
+    const NUMBER_PRE_ELEMENT = 25;
     const strokeCount = strokeData.length / NUMBER_PRE_ELEMENT
     const strokeBuffer = device.createBuffer({ size: strokeData.byteLength, usage: GPUBufferUsage.STORAGE, mappedAtCreation: true, })
     new Float32Array(strokeBuffer.getMappedRange()).set(strokeData);
@@ -214,9 +215,10 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     const binSizeBuffer = device.createBuffer({ size: binSizeBufferSize, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC })
 
     const UBOBufferSize =
-        4 + 4 + 4 + 4 + // screenWidth, screenHeight, strokeType, layerCount
+        4 + 4 + 4 +     // screenWidth, screenHeight, strokeCount
         4 * 16 +        // MVP
-        4 * 16          // MV
+        4 * 16 +        // MV
+        4               // (align)
     const UBOBuffer = device.createBuffer({ size: UBOBufferSize, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST })
 
     const bindGroupLayout = device.createBindGroupLayout({
@@ -264,8 +266,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         //console.log(mvp, [WIDTH, HEIGHT])
 
         device.queue.writeBuffer(UBOBuffer, 0, new Uint32Array([WIDTH, HEIGHT]).buffer)
-        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([strokeType,]).buffer)
-        device.queue.writeBuffer(UBOBuffer, 12, new Uint32Array([strokeCount,]).buffer)
+        device.queue.writeBuffer(UBOBuffer, 8, new Uint32Array([strokeCount,]).buffer)
         device.queue.writeBuffer(UBOBuffer, 16, (mvp as Float32Array).buffer)
         device.queue.writeBuffer(UBOBuffer, 80, (mv as Float32Array).buffer)
 
@@ -281,7 +282,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
         // Rasterizer pass
         cmd.setPipeline(rasterizerPipeline)
         cmd.setBindGroup(0, bindGroup)
-        cmd.dispatchWorkgroups(TILE_COUNT_X, TILE_COUNT_Y, 16)
+        cmd.dispatchWorkgroups(TILE_COUNT_X, TILE_COUNT_Y, 16 * 16 / 64)
         cmd.end()
     }
 

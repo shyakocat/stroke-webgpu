@@ -4,7 +4,7 @@ const COMPOSITION_METHOD_SOFTMAX = 2;   // Not Support
 
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 64;                            // 每个像素采样的个数
+const STROKE_MAX_COUNT = 8;                             // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
@@ -24,7 +24,7 @@ struct LightPillar {
 
 // warn: vec3<f32> size 12 but align to 16
 // density => color.w
-struct Entity { transform: mat4x4<f32>, color: vec4<f32>, };
+struct Entity { transform: mat4x4<f32>, color: vec4<f32>, shape: u32, id: u32, };
 struct Sphere { base: Entity, };                    // Support 球体
 struct Cube { base: Entity, };                      // Support 立方体
 struct Tetrahedron { base: Entity, };               // Support 四面体
@@ -34,7 +34,6 @@ struct Capsule { base: Entity, ra: f32, rb: f32, length: f32, }    // Support �
 struct UBO {            // align(16) size(96)
     screenWidth: u32,
     screenHeight: u32,
-    strokeType: u32,                                // 1, 2
     strokeCount: u32,
     modelViewProjectionMatrix: mat4x4<f32>,
     modelViewMatrix: mat4x4<f32>,
@@ -104,6 +103,8 @@ fn getEntity(index: u32) -> Entity {
         strokeBuffer.data[index + 12u], strokeBuffer.data[index + 13u], strokeBuffer.data[index + 14u], strokeBuffer.data[index + 15u]
     );
     e.color = vec4<f32>(strokeBuffer.data[index + 16u], strokeBuffer.data[index + 17u], strokeBuffer.data[index + 18u], strokeBuffer.data[index + 19u]);
+    e.shape = u32(strokeBuffer.data[index + 20u]);
+    e.id = u32(strokeBuffer.data[index + 21u]);
     return e;
 }
 
@@ -129,20 +130,13 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if global_id.x >= uniforms.strokeCount { return; }
     let TILE_COUNT_X = (uniforms.screenWidth - 1) / TILE_WIDTH + 1;
     let TILE_COUNT_Y = (uniforms.screenHeight - 1) / TILE_HEIGHT + 1;
-    var index: u32;
-    if uniforms.strokeType == 1 || uniforms.strokeType == 2 || uniforms.strokeType == 3 || uniforms.strokeType == 4 { 
-        // Ellipsode or Box or Tetrahedron or Octahedron
-        index = global_id.x * 20u;
-    } else { 
-        // Capsule
-        index = global_id.x * 23u;
-    }
+    let index: u32 = global_id.x * 25u;
     var base: Entity;
     base = getEntity(index);
     // 直接判图元太难，可以判图元的包围盒
     let m = uniforms.modelViewProjectionMatrix * base.transform;
     var cubes: array<vec3<f32>, 8>;
-    if uniforms.strokeType == 1 || uniforms.strokeType == 2 || uniforms.strokeType == 3 || uniforms.strokeType == 4 { 
+    if base.shape == 1 || base.shape == 2 || base.shape == 3 || base.shape == 4 { 
         // Ellipsode or Box or Tetrahedron or Octahedron
         cubes = array<vec3<f32>, 8>(
             vec3<f32>(-1.0f, -1.0f, -1.0f), vec3<f32>(-1.0f, -1.0f, 1.0f),
@@ -150,10 +144,10 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
             vec3<f32>(1.0f, -1.0f, -1.0f), vec3<f32>(1.0f, -1.0f, 1.0f),
             vec3<f32>(1.0f, 1.0f, -1.0f), vec3<f32>(1.0f, 1.0f, 1.0f)
         );
-    } else { 
+    } else if base.shape == 5 { 
         // Capsule
-        let r = max(strokeBuffer.data[index + 20u], strokeBuffer.data[index + 21u]);
-        let l = strokeBuffer.data[index + 22u] * 0.5;
+        let r = max(strokeBuffer.data[index + 22u], strokeBuffer.data[index + 23u]);
+        let l = strokeBuffer.data[index + 24u] * 0.5;
         let h = l + r;
         cubes = array<vec3<f32>, 8>(
             vec3<f32>(-r, -r, -h), vec3<f32>(-r, -r, h),
@@ -179,9 +173,9 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tile_lt = vec2<u32>(global_id.y * TILE_WIDTH, global_id.z * TILE_HEIGHT);
     let tile_rb = vec2<u32>(global_id.y * TILE_WIDTH + TILE_WIDTH, global_id.z * TILE_HEIGHT + TILE_HEIGHT);
     if !(cube_min.x > f32(tile_rb.x) || cube_min.y > f32(tile_rb.y) || cube_max.x < f32(tile_lt.x) || cube_max.y < f32(tile_lt.y)) {
-        let index = global_id.y + global_id.z * TILE_COUNT_X;
-        let indexBias = uniforms.strokeCount * index;
-        binBuffer.id[indexBias + atomicAdd(&binSizeBuffer.size[index], 1)] = global_id.x;
+        let tileId = global_id.y + global_id.z * TILE_COUNT_X;
+        let indexBias = uniforms.strokeCount * tileId;
+        binBuffer.id[indexBias + atomicAdd(&binSizeBuffer.size[tileId], 1)] = global_id.x;
     }
 }
 
@@ -248,7 +242,7 @@ fn solve_quadratic_eqation(a: f32, b: f32, c: f32) -> QuadraticEquationResult {
 }
 
 // 16x16 pixels per tile
-@compute @workgroup_size(1, 1, 16)
+@compute @workgroup_size(1, 1, 64)
 fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // global_id.x is tile width id
     // global_id.y is tile height id
@@ -265,19 +259,25 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // }
     // workgroupBarrier();
     // // per pixel calculate intersection, sort, α-blending
-    var samples: array<LightPillar, STROKE_MAX_COUNT_ADD_1>;
     let pixelX = global_id.x * 16 + (global_id.z / TILE_WIDTH);
     let pixelY = global_id.y * 16 + (global_id.z % TILE_HEIGHT);
     let pixelId = pixelX + pixelY * uniforms.screenWidth;
     if pixelX > uniforms.screenWidth || pixelY > uniforms.screenHeight { return; }
     //outputBuffer.pixels[pixelId] = vec4f(f32(listCount) / f32(uniforms.strokeCount), 0, 0, 1); return;
+    //outputBuffer.pixels[pixelId] = vec4f(1, 0, 0, 1); return;
+    var samples: array<LightPillar, STROKE_MAX_COUNT_ADD_1>;
     var sampleCount: u32 = 0;
-    if uniforms.strokeType == 1 {
-        // Ellipsoid
-        for (var i: u32 = 0; i < listCount; i++) {
-            let index = binBuffer.id[indexBias + i] * 20u;
+    for (var i: u32 = 0; i < listCount; i++) {
+        let index = binBuffer.id[indexBias + i] * 25u;
+        let e : Entity = getEntity(index);
+        var tmp: LightPillar;
+        tmp.id = e.id;
+        tmp.color = e.color.xyz;
+        tmp.density = e.color.w;
+        if e.shape == 1 {
+            // Ellipsoid
             var data: Sphere;
-            data.base = getEntity(index);
+            data.base = e;
             let m = uniforms.modelViewProjectionMatrix * data.base.transform;
             let m_inv = inverse(m);
             var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
@@ -295,32 +295,20 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d1 = -p1.z / p1.w;
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
-            var tmp: LightPillar;
-            tmp.id = index;
-            tmp.color = data.base.color.xyz;
-            tmp.density = data.base.color.w;
             tmp.depth = d1;
             tmp.length = d2 - d1;
             //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
             tmp.key = tmp.depth;
-            var pos = sampleCount;
-            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
-            while pos > 0 {
-                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
-            }
-            samples[pos] = tmp;
         }
-    } else if uniforms.strokeType == 2 {
-        // Cube
-        let surfaces = array<vec4f, 6>(
-            vec4f(0.0f, 1.0f, 0.0f, -1.0f), vec4f(0.0f, 1.0f, 0.0f, 1.0f),
-            vec4f(0.0f, 0.0f, 1.0f, -1.0f), vec4f(0.0f, 0.0f, 1.0f, 1.0f),
-            vec4f(1.0f, 0.0f, 0.0f, -1.0f), vec4f(1.0f, 0.0f, 0.0f, 1.0f),
-        );
-        for (var i: u32 = 0; i < listCount; i++) {
-            let index = binBuffer.id[indexBias + i] * 20u;
+        else if e.shape == 2 {
+            // Cube
+            let surfaces = array<vec4f, 6>(
+                vec4f(0.0f, 1.0f, 0.0f, -1.0f), vec4f(0.0f, 1.0f, 0.0f, 1.0f),
+                vec4f(0.0f, 0.0f, 1.0f, -1.0f), vec4f(0.0f, 0.0f, 1.0f, 1.0f),
+                vec4f(1.0f, 0.0f, 0.0f, -1.0f), vec4f(1.0f, 0.0f, 0.0f, 1.0f),
+            );
             var data: Cube;
-            data.base = getEntity(index);
+            data.base = e;
             let m = uniforms.modelViewProjectionMatrix * data.base.transform;
             let m_inv = inverse(m);
             var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
@@ -353,39 +341,27 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d1 = -p1.z / p1.w;
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
-            var tmp: LightPillar;
-            tmp.id = index;
-            tmp.color = data.base.color.xyz;
-            tmp.density = data.base.color.w;
             tmp.depth = d1;
             tmp.length = d2 - d1;
             //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
             tmp.key = tmp.depth;
-            var pos = sampleCount;
-            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
-            while pos > 0 {
-                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
-            }
-            samples[pos] = tmp;
         }
-    } else if uniforms.strokeType == 3 {
-        // Tetrahedron
-        let triangles = array<array<vec3f, 3>, 4>(
-            array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(1, -1, -1), vec3f(-1, -1, 1)),
-            array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(1, -1, -1), vec3f(1, 1, 1)),
-            array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(-1, -1, 1), vec3f(1, 1, 1)),
-            array<vec3f, 3>(vec3f(1, -1, -1), vec3f(-1, -1, 1), vec3f(1, 1, 1)),
-        );
-        let m_tris = array<mat3x3f, 4>(
-            barycentricMatrix(triangles[0]),
-            barycentricMatrix(triangles[1]),
-            barycentricMatrix(triangles[2]),
-            barycentricMatrix(triangles[3]),
-        );
-        for (var i: u32 = 0; i < listCount; i++) {
-            let index = binBuffer.id[indexBias + i] * 20u;
-            var data: Cube;
-            data.base = getEntity(index);
+        else if e.shape == 3 {
+            // Tetrahedron
+            let triangles = array<array<vec3f, 3>, 4>(
+                array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(1, -1, -1), vec3f(-1, -1, 1)),
+                array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(1, -1, -1), vec3f(1, 1, 1)),
+                array<vec3f, 3>(vec3f(-1, 1, -1), vec3f(-1, -1, 1), vec3f(1, 1, 1)),
+                array<vec3f, 3>(vec3f(1, -1, -1), vec3f(-1, -1, 1), vec3f(1, 1, 1)),
+            );
+            let m_tris = array<mat3x3f, 4>(
+                barycentricMatrix(triangles[0]),
+                barycentricMatrix(triangles[1]),
+                barycentricMatrix(triangles[2]),
+                barycentricMatrix(triangles[3]),
+            );
+            var data: Tetrahedron;
+            data.base = e;
             let m = uniforms.modelViewProjectionMatrix * data.base.transform;
             let m_inv = inverse(m);
             var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
@@ -419,45 +395,33 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d1 = -p1.z / p1.w;
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
-            var tmp: LightPillar;
-            tmp.id = index;
-            tmp.color = data.base.color.xyz;
-            tmp.density = data.base.color.w;
             tmp.depth = d1;
             tmp.length = d2 - d1;
             //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
             tmp.key = tmp.depth;
-            var pos = sampleCount;
-            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
-            while pos > 0 {
-                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
-            }
-            samples[pos] = tmp;
         }
-    } else if uniforms.strokeType == 4 {
-        // Octahedron
-        let P1 = vec3f(1, 0, 0);
-        let P2 = vec3f(-1, 0, 0);
-        let P3 = vec3f(0, -1, 0);
-        let P4 = vec3f(0, 1, 0);
-        let P5 = vec3f(0, 0, 1);
-        let P6 = vec3f(0, 0, -1);
-        let triangles = array<array<vec3f, 3>, 8>(
-            array<vec3f, 3>(P1, P3, P5), array<vec3f, 3>(P1, P3, P6),
-            array<vec3f, 3>(P1, P4, P5), array<vec3f, 3>(P1, P4, P6),
-            array<vec3f, 3>(P2, P3, P5), array<vec3f, 3>(P2, P3, P6),
-            array<vec3f, 3>(P2, P4, P5), array<vec3f, 3>(P2, P4, P6),
-        );
-        let m_tris = array<mat3x3f, 8>(
-            barycentricMatrix(triangles[0]), barycentricMatrix(triangles[1]),
-            barycentricMatrix(triangles[2]), barycentricMatrix(triangles[3]),
-            barycentricMatrix(triangles[4]), barycentricMatrix(triangles[5]),
-            barycentricMatrix(triangles[6]), barycentricMatrix(triangles[7]),
-        );
-        for (var i: u32 = 0; i < listCount; i++) {
-            let index = binBuffer.id[indexBias + i] * 20u;
-            var data: Cube;
-            data.base = getEntity(index);
+        else if e.shape == 4 {
+            // Octahedron
+            let P1 = vec3f(1, 0, 0);
+            let P2 = vec3f(-1, 0, 0);
+            let P3 = vec3f(0, -1, 0);
+            let P4 = vec3f(0, 1, 0);
+            let P5 = vec3f(0, 0, 1);
+            let P6 = vec3f(0, 0, -1);
+            let triangles = array<array<vec3f, 3>, 8>(
+                array<vec3f, 3>(P1, P3, P5), array<vec3f, 3>(P1, P3, P6),
+                array<vec3f, 3>(P1, P4, P5), array<vec3f, 3>(P1, P4, P6),
+                array<vec3f, 3>(P2, P3, P5), array<vec3f, 3>(P2, P3, P6),
+                array<vec3f, 3>(P2, P4, P5), array<vec3f, 3>(P2, P4, P6),
+            );
+            let m_tris = array<mat3x3f, 8>(
+                barycentricMatrix(triangles[0]), barycentricMatrix(triangles[1]),
+                barycentricMatrix(triangles[2]), barycentricMatrix(triangles[3]),
+                barycentricMatrix(triangles[4]), barycentricMatrix(triangles[5]),
+                barycentricMatrix(triangles[6]), barycentricMatrix(triangles[7]),
+            );
+            var data: Octahedron;
+            data.base = e;
             let m = uniforms.modelViewProjectionMatrix * data.base.transform;
             let m_inv = inverse(m);
             var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
@@ -491,30 +455,17 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d1 = -p1.z / p1.w;
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
-            var tmp: LightPillar;
-            tmp.id = index;
-            tmp.color = data.base.color.xyz;
-            tmp.density = data.base.color.w;
             tmp.depth = d1;
             tmp.length = d2 - d1;
             //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
             tmp.key = tmp.depth;
-            var pos = sampleCount;
-            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
-            while pos > 0 {
-                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
-            }
-            samples[pos] = tmp;
         }
-    } else if uniforms.strokeType == 5 {
-        // Capsule
-        for (var i: u32 = 0; i < listCount; i++) {
-            let index = binBuffer.id[indexBias + i] * 23u;
+        else if e.shape == 5 {
             var data: Capsule;
-            data.base = getEntity(index);
-            data.ra = strokeBuffer.data[index + 20u];
-            data.rb = strokeBuffer.data[index + 21u];
-            data.length = strokeBuffer.data[index + 22u];
+            data.base = e;
+            data.ra = strokeBuffer.data[index + 22u];
+            data.rb = strokeBuffer.data[index + 23u];
+            data.length = strokeBuffer.data[index + 24u];
             let ra = data.ra;
             let rb = data.rb;
             let l = data.length;
@@ -580,21 +531,17 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var d1 = -p1.z / p1.w;
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
-            var tmp: LightPillar;
-            tmp.id = index;
-            tmp.color = data.base.color.xyz;
-            tmp.density = data.base.color.w;
             tmp.depth = d1;
             tmp.length = d2 - d1;
             //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
             tmp.key = tmp.depth;
-            var pos = sampleCount;
-            if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
-            while pos > 0 {
-                if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
-            }
-            samples[pos] = tmp;
         }
+        var pos = sampleCount;
+        if sampleCount < STROKE_MAX_COUNT { sampleCount++; }
+        while pos > 0 {
+            if tmp.key < samples[pos - 1].key { samples[pos] = samples[pos - 1]; pos--; } else { break; }
+        }
+        samples[pos] = tmp;
     }
     if sampleCount == 0 { return; }
     var frags: array<LightPillar, STROKE_MAX_COUNT_MUL_2>;
