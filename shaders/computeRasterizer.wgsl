@@ -4,13 +4,13 @@ const COMPOSITION_METHOD_SOFTMAX = 2;   // Not Support
 
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 8;                             // 每个像素采样的个数
+const STROKE_MAX_COUNT = 32;                             // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
 const BACKGROUND_COLOR = vec4f(1, 1, 1, 1);
 const eps = 1e-5;
-const COMPOSITION_METHOD = COMPOSITION_METHOD_SOFTMAX;
+const COMPOSITION_METHOD = COMPOSITION_METHOD_OVERLAY;
 const COMPOSITION_METHOD_SOFTMAX_TAO = 0.05;
 
 struct LightPillar {
