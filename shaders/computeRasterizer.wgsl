@@ -4,7 +4,7 @@ const COMPOSITION_METHOD_SOFTMAX = 2;   // Not Support
 
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 32;                             // 每个像素采样的个数
+const STROKE_MAX_COUNT = 100;                             // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
@@ -30,6 +30,7 @@ struct Cube { base: Entity, };                      // Support 立方体
 struct Tetrahedron { base: Entity, };               // Support 四面体
 struct Octahedron { base: Entity, };                // Support 八面体
 struct Capsule { base: Entity, ra: f32, rb: f32, length: f32, }    // Support 胶囊体
+struct Cylinder { base: Entity, };                  // Support 圆柱体
 
 struct UBO {            // align(16) size(96)
     screenWidth: u32,
@@ -136,7 +137,7 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 直接判图元太难，可以判图元的包围盒
     let m = uniforms.modelViewProjectionMatrix * base.transform;
     var cubes: array<vec3<f32>, 8>;
-    if base.shape == 1 || base.shape == 2 || base.shape == 3 || base.shape == 4 { 
+    if base.shape == 1 || base.shape == 2 || base.shape == 3 || base.shape == 4 || base.shape == 6 { 
         // Ellipsode or Box or Tetrahedron or Octahedron
         cubes = array<vec3<f32>, 8>(
             vec3<f32>(-1.0f, -1.0f, -1.0f), vec3<f32>(-1.0f, -1.0f, 1.0f),
@@ -522,6 +523,53 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     if _t1 > 1 { solutions[solutionCount] = ret.answer.x; solutionCount++; }
                     if _t2 > 1 { solutions[solutionCount] = ret.answer.y; solutionCount++; }
                 }
+            }
+            if solutionCount < 2 { continue; }
+            let _p1 = u * solutions[0] + v;
+            let _p2 = u * solutions[1] + v;
+            let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
+            let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+            var d1 = -p1.z / p1.w;
+            var d2 = -p2.z / p2.w;
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
+        }
+        else if e.shape == 6 {
+            var data: Cylinder;
+            data.base = e;
+            let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+            let m_inv = inverse(m);
+            var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
+            var solutionCount: u32 = 0;
+            var solutions: array<f32, 4>;
+            // 圆柱面
+            {
+                let ret = solve_quadratic_eqation(dot(u.xy, u.xy), 2 * dot(u.xy, v.xy), dot(v.xy, v.xy) - 1);
+                if ret.hasAnswer {
+                    let _p1 = u * (ret.answer.x) + v;
+                    let _p2 = u * (ret.answer.y) + v;
+                    if -1 <= _p1.z && _p1.z <= 1 { solutions[solutionCount] = ret.answer.x; solutionCount++; }
+                    if -1 <= _p2.z && _p2.z <= 1 { solutions[solutionCount] = ret.answer.y; solutionCount++; }
+                }
+            }
+            // 顶面和底面
+            {
+                let _t = (1 - v.z) / u.z;
+                let _p = u * _t + v;
+                if dot(_p.xy, _p.xy) <= 1 { solutions[solutionCount] = _t; solutionCount++; }
+            }
+            {
+                let _t = (-1 - v.z) / u.z;
+                let _p = u * _t + v;
+                if dot(_p.xy, _p.xy) <= 1 { solutions[solutionCount] = _t; solutionCount++; }
             }
             if solutionCount < 2 { continue; }
             let _p1 = u * solutions[0] + v;

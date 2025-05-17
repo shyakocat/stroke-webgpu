@@ -1,8 +1,9 @@
 import { mat4, vec3, quat } from 'gl-matrix';
 //import { WebIO } from '@gltf-transform/core';
 //@ts-ignore
+import modelData from '../models/lego_cylinder/temp.json'
 //import modelData from '../models/lego_mix_ellipsoid_obb_line/strokes.proc.json'
-import modelData from '../models/lego_mix_line_aabb/temp.json'
+//import modelData from '../models/lego_mix_line_aabb/temp.json'
 //import modelData from '../models/lego_mix_ellipsoid_tetrahedron/temp.json'
 //import modelData from '../models/lego_ellipsoid_softmax/stroke.json'
 //import modelData from '../models/lego_bezier_max/stroke.json'
@@ -68,16 +69,17 @@ export async function loadModel(): Promise<Float32Array> {
 		"octahedron_a": 4,
 		"capsule_a": 5,
 		"line": 5,
+		"cylinder": 6,
 	};
 	const finalPositions = [];
 
-	// modelData.shape_type = "ellipsoid"
+	// modelData.shape_type = "cylinder"
 	// modelData.stroke_params = {
-	// 	"strokeNo.1": {
-	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
-	// 		color_params: [1.0, 0, 0],
-	// 		density_params: 1.0,
-	// 	},
+	// 	// "strokeNo.1": {
+	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
+	// 	// 	color_params: [1.0, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
 	// 	// "strokeNo.2": {
 	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -2, 0, 0, 1.0, 0.6],
 	// 	// 	color_params: [0, 1.0, 0],
@@ -108,6 +110,11 @@ export async function loadModel(): Promise<Float32Array> {
 	// 	// 	color_params: [1, 0, 0],
 	// 	// 	density_params: 1.0,
 	// 	// },
+	// 	"strokeNo.8": {
+	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, ],
+	// 		color_params: [1.0, 0, 0],
+	// 		density_params: 1.0,
+	// 	},
 	// }
 
 	for (let [strokeNo, o] of Object.entries(modelData.stroke_params)) {
@@ -166,7 +173,7 @@ export async function loadModel(): Promise<Float32Array> {
 				}
 			}
 		}
-		else if (shape_type === "ellipsoid" || shape_type === "cube_a" || shape_type === "tetrahedron_a" || shape_type === "octahedron_a") {
+		else if (shape_type === "ellipsoid" || shape_type === "cube_a" || shape_type === "tetrahedron_a" || shape_type === "octahedron_a" || shape_type === "cylinder") {
 			let ps = o.shape_params;
 			let m = mat4.create();
 			let s = vec3.fromValues(ps[0], ps[1], ps[2]);
