@@ -70,52 +70,58 @@ export async function loadModel(): Promise<Float32Array> {
 		"capsule_a": 5,
 		"line": 5,
 		"cylinder": 6,
+		"roundcube": 7,
 	};
 	const finalPositions = [];
 
-	// modelData.shape_type = "cylinder"
-	// modelData.stroke_params = {
-	// 	// "strokeNo.1": {
-	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
-	// 	// 	color_params: [1.0, 0, 0],
-	// 	// 	density_params: 1.0,
-	// 	// },
-	// 	// "strokeNo.2": {
-	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -2, 0, 0, 1.0, 0.6],
-	// 	// 	color_params: [0, 1.0, 0],
-	// 	// 	density_params: 1.0,
-	// 	// },
-	// 	// "strokeNo.3": {
-	// 	// 	shape_params: [0.5, 1.0, 0.7, 0.1, 0.5, -0.2, 0.1, -0.5, 0.33],
-	// 	// 	color_params: [0, 0, 1.0],
-	// 	// 	density_params: 1.0,
-	// 	// },
-	// 	// "strokeNo.4": {
-	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -4, 0, 0],
-	// 	// 	color_params: [0, 0, 1.0],
-	// 	// 	density_params: 1.0,
-	// 	// },
-	// 	// "strokeNo.5": {
-	// 	// 	shape_params: [0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 0.1, 0.1],
-	// 	// 	color_params: [1.0, 0, 0],
-	// 	// 	density_params: 1.0,
-	// 	// },
-	// 	// "strokeNo.6": {
-	// 	// 	shape_params: [1.0, 0, 0, 0, 0, 0, 0, 0.1, 2],
-	// 	// 	color_params: [0, 1, 0],
-	// 	// 	density_params: 1.0,
-	// 	// },
-	// 	// "strokeNo.7": {
-	// 	// 	shape_params: [1.0, 0, 0, 0, 0, 0, 1, 0.1, 0.5, 2],
-	// 	// 	color_params: [1, 0, 0],
-	// 	// 	density_params: 1.0,
-	// 	// },
-	// 	"strokeNo.8": {
-	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, ],
-	// 		color_params: [1.0, 0, 0],
-	// 		density_params: 1.0,
-	// 	},
-	// }
+	modelData.shape_type = "roundcube"
+	modelData.stroke_params = {
+		// "strokeNo.1": {
+		// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
+		// 	color_params: [1.0, 0, 0],
+		// 	density_params: 1.0,
+		// },
+		// "strokeNo.2": {
+		// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -2, 0, 0, 1.0, 0.6],
+		// 	color_params: [0, 1.0, 0],
+		// 	density_params: 1.0,
+		// },
+		// "strokeNo.3": {
+		// 	shape_params: [0.5, 1.0, 0.7, 0.1, 0.5, -0.2, 0.1, -0.5, 0.33],
+		// 	color_params: [0, 0, 1.0],
+		// 	density_params: 1.0,
+		// },
+		// "strokeNo.4": {
+		// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -4, 0, 0],
+		// 	color_params: [0, 0, 1.0],
+		// 	density_params: 1.0,
+		// },
+		// "strokeNo.5": {
+		// 	shape_params: [0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 0.1, 0.1],
+		// 	color_params: [1.0, 0, 0],
+		// 	density_params: 1.0,
+		// },
+		// "strokeNo.6": {
+		// 	shape_params: [1.0, 0, 0, 0, 0, 0, 0, 0.1, 2],
+		// 	color_params: [0, 1, 0],
+		// 	density_params: 1.0,
+		// },
+		// "strokeNo.7": {
+		// 	shape_params: [1.0, 0, 0, 0, 0, 0, 1, 0.1, 0.5, 2],
+		// 	color_params: [1, 0, 0],
+		// 	density_params: 1.0,
+		// },
+		// "strokeNo.8": {
+		// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, ],
+		// 	color_params: [1.0, 0, 0],
+		// 	density_params: 1.0,
+		// },
+		"strokeNo.9": {
+			shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0.33],
+			color_params: [1.0, 0, 0],
+			density_params: 1.0,
+		},
+	}
 
 	for (let [strokeNo, o] of Object.entries(modelData.stroke_params)) {
 		const m = /strokeNo.(\d+)/.exec(strokeNo);
@@ -173,7 +179,8 @@ export async function loadModel(): Promise<Float32Array> {
 				}
 			}
 		}
-		else if (shape_type === "ellipsoid" || shape_type === "cube_a" || shape_type === "tetrahedron_a" || shape_type === "octahedron_a" || shape_type === "cylinder") {
+		else if (shape_type === "ellipsoid" || shape_type === "cube_a" || shape_type === "tetrahedron_a" || 
+			shape_type === "octahedron_a" || shape_type === "cylinder" || shape_type === "roundcube") {
 			let ps = o.shape_params;
 			let m = mat4.create();
 			let s = vec3.fromValues(ps[0], ps[1], ps[2]);
@@ -186,6 +193,7 @@ export async function loadModel(): Promise<Float32Array> {
 			finalPositions.push(o.density_params);
 			finalPositions.push(shape_type_id);
 			finalPositions.push(stroke_id);
+			if (shape_type === "roundcube") { finalPositions.push(ps[9]); }
 			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
 		}
 		else if (shape_type === "sphere" || shape_type === "cube" || shape_type === "tetrahedron" || shape_type === "octahedron") {

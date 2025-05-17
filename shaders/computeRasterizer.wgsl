@@ -4,7 +4,7 @@ const COMPOSITION_METHOD_SOFTMAX = 2;   // Not Support
 
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 100;                             // 每个像素采样的个数
+const STROKE_MAX_COUNT = 8;                             // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
@@ -12,6 +12,10 @@ const BACKGROUND_COLOR = vec4f(1, 1, 1, 1);
 const eps = 1e-5;
 const COMPOSITION_METHOD = COMPOSITION_METHOD_OVERLAY;
 const COMPOSITION_METHOD_SOFTMAX_TAO = 0.05;
+
+const RAYMARCHING_MAX_DIST = 100.0;
+const RAYMARCHING_MAX_STEPS = 100;
+const RAYMARCHING_HIT_THRESHOLD = 0.001;
 
 struct LightPillar {
     key: f32,
@@ -31,6 +35,7 @@ struct Tetrahedron { base: Entity, };               // Support 四面体
 struct Octahedron { base: Entity, };                // Support 八面体
 struct Capsule { base: Entity, ra: f32, rb: f32, length: f32, }    // Support 胶囊体
 struct Cylinder { base: Entity, };                  // Support 圆柱体
+struct RoundCube { base: Entity, r: f32, }          // 圆角方体
 
 struct UBO {            // align(16) size(96)
     screenWidth: u32,
@@ -137,7 +142,7 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 直接判图元太难，可以判图元的包围盒
     let m = uniforms.modelViewProjectionMatrix * base.transform;
     var cubes: array<vec3<f32>, 8>;
-    if base.shape == 1 || base.shape == 2 || base.shape == 3 || base.shape == 4 || base.shape == 6 { 
+    if base.shape == 1 || base.shape == 2 || base.shape == 3 || base.shape == 4 || base.shape == 6 || base.shape == 7 { 
         // Ellipsode or Box or Tetrahedron or Octahedron
         cubes = array<vec3<f32>, 8>(
             vec3<f32>(-1.0f, -1.0f, -1.0f), vec3<f32>(-1.0f, -1.0f, 1.0f),
@@ -240,6 +245,11 @@ fn solve_quadratic_eqation(a: f32, b: f32, c: f32) -> QuadraticEquationResult {
     ret.hasAnswer = true;
     ret.answer = vec2f(root1, root2);
     return ret;
+}
+
+fn sdf_roundbox(p: vec3f, b: vec3f, r: f32) -> f32 {
+    let q: vec3f = abs(p) - b + r;
+    return length(max(q, vec3f(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
 }
 
 // 16x16 pixels per tile
@@ -570,6 +580,51 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let _t = (-1 - v.z) / u.z;
                 let _p = u * _t + v;
                 if dot(_p.xy, _p.xy) <= 1 { solutions[solutionCount] = _t; solutionCount++; }
+            }
+            if solutionCount < 2 { continue; }
+            let _p1 = u * solutions[0] + v;
+            let _p2 = u * solutions[1] + v;
+            let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
+            let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+            var d1 = -p1.z / p1.w;
+            var d2 = -p2.z / p2.w;
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
+        }
+        else if e.shape == 7 {
+            var data: RoundCube;
+            data.base = e;
+            data.r = strokeBuffer.data[index + 22u];
+            let m = uniforms.modelViewProjectionMatrix * data.base.transform;
+            let m_inv = inverse(m);
+            var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
+            let u_norm: vec3f = normalize(u);
+            var solutionCount: u32 = 0;
+            var solutions: array<f32, 2>;
+            var t: f32 = 0.0;
+            for (var ans = 0; ans < 2; ans++) {
+                var hit = false;
+                for (var i = 0; i < RAYMARCHING_MAX_STEPS; i++) {
+                    let p = v + u_norm * t;
+                    let d = abs(sdf_roundbox(p, vec3f(1.0, 1.0, 1.0), data.r));
+                    if (d < RAYMARCHING_HIT_THRESHOLD) { hit = true; break; }
+                    if (t > RAYMARCHING_MAX_DIST) { break; }
+                    t += d;
+                }
+                if (hit) {
+                    solutions[solutionCount] = t;
+                    solutionCount++;
+                    t += RAYMARCHING_HIT_THRESHOLD * 10;
+                }
+                else { break; }
             }
             if solutionCount < 2 { continue; }
             let _p1 = u * solutions[0] + v;
