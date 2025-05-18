@@ -21,8 +21,8 @@ for (const [k, v] of Object.entries(o.stroke_params)) {
         d.shape_params = ps;
     }
     else if (w3 >= w1 && w3 >= w2) {
-        d.stroke_type = "capsule_a";
-        d.shape_params = [...ps, 1+r_diff, 1-r_diff, h];
+        d.stroke_type = "line_a";
+        d.shape_params = [h, r_diff, ...ps];
     }
 }
 fs.writeFileSync(output_path, JSON.stringify(o))

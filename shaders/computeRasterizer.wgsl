@@ -4,7 +4,7 @@ const COMPOSITION_METHOD_SOFTMAX = 2;   // Not Support
 
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 8;                             // 每个像素采样的个数
+const STROKE_MAX_COUNT = 32;                            // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
@@ -14,7 +14,7 @@ const COMPOSITION_METHOD = COMPOSITION_METHOD_OVERLAY;
 const COMPOSITION_METHOD_SOFTMAX_TAO = 0.05;
 
 const RAYMARCHING_MAX_DIST = 100.0;
-const RAYMARCHING_MAX_STEPS = 100;
+const RAYMARCHING_MAX_STEPS = 200;
 const RAYMARCHING_HIT_THRESHOLD = 0.001;
 
 struct LightPillar {
@@ -622,13 +622,19 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 if (hit) {
                     solutions[solutionCount] = t;
                     solutionCount++;
-                    t += RAYMARCHING_HIT_THRESHOLD * 10;
+                    var k: f32 = 3;
+                    while (k < 100) {
+                        let d = abs(sdf_roundbox(v + u_norm * (t + RAYMARCHING_HIT_THRESHOLD * k), vec3f(1.0, 1.0, 1.0), data.r));
+                        if d > RAYMARCHING_HIT_THRESHOLD { break; }
+                        k += 10;
+                    }
+                    t += RAYMARCHING_HIT_THRESHOLD * k;
                 }
                 else { break; }
             }
             if solutionCount < 2 { continue; }
-            let _p1 = u * solutions[0] + v;
-            let _p2 = u * solutions[1] + v;
+            let _p1 = u_norm * solutions[0] + v;
+            let _p2 = u_norm * solutions[1] + v;
             let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
             let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
             var d1 = -p1.z / p1.w;

@@ -66,7 +66,7 @@
             "density_params": 11.089621543884277
         },
         "strokeNo.3": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.2469918429851532,
                 0.030803034082055092,
@@ -128,7 +128,7 @@
             "density_params": 3.370819091796875
         },
         "strokeNo.5": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.04054807126522064,
@@ -159,7 +159,7 @@
             "density_params": 6.643180847167969
         },
         "strokeNo.6": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.056126128882169724,
                 0.020610198378562927,
@@ -190,7 +190,7 @@
             "density_params": 15.508861541748047
         },
         "strokeNo.7": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.11160293966531754,
                 0.16475830972194672,
@@ -283,7 +283,7 @@
             "density_params": 4.736019611358643
         },
         "strokeNo.10": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.09326682239770889,
                 0.010838362388312817,
@@ -314,7 +314,7 @@
             "density_params": 10.140419006347656
         },
         "strokeNo.11": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04758510738611221,
                 0.026666825637221336,
@@ -345,7 +345,7 @@
             "density_params": 1.7767205238342285
         },
         "strokeNo.12": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06154097616672516,
                 0.029668867588043213,
@@ -407,7 +407,7 @@
             "density_params": 6.774799823760986
         },
         "strokeNo.14": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.12299688905477524,
                 0.027969954535365105,
@@ -438,7 +438,7 @@
             "density_params": 2.160825490951538
         },
         "strokeNo.15": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07299476861953735,
                 0.15603093802928925,
@@ -469,7 +469,7 @@
             "density_params": 7.796274185180664
         },
         "strokeNo.16": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.015139881521463394,
                 0.013218455947935581,
@@ -500,7 +500,7 @@
             "density_params": 11.942005157470703
         },
         "strokeNo.17": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.022920554503798485,
                 0.031819898635149,
@@ -562,7 +562,7 @@
             "density_params": 1.7332831621170044
         },
         "strokeNo.19": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010083461180329323,
                 0.016748463734984398,
@@ -593,7 +593,7 @@
             "density_params": 9.042959213256836
         },
         "strokeNo.20": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.10009286552667618,
                 0.010906405746936798,
@@ -624,7 +624,7 @@
             "density_params": 3.355956792831421
         },
         "strokeNo.21": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.03450651466846466,
@@ -686,7 +686,7 @@
             "density_params": 0.8171230554580688
         },
         "strokeNo.23": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.4203169643878937,
                 0.24225135147571564,
@@ -748,7 +748,7 @@
             "density_params": 2.1391243934631348
         },
         "strokeNo.25": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1452145278453827,
                 0.013217244297266006,
@@ -779,7 +779,7 @@
             "density_params": 2.958747386932373
         },
         "strokeNo.26": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.13492389023303986,
                 0.1065138578414917,
@@ -810,7 +810,7 @@
             "density_params": 10.304059028625488
         },
         "strokeNo.27": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.017714885994791985,
                 0.02924933470785618,
@@ -841,7 +841,7 @@
             "density_params": 10.802379608154297
         },
         "strokeNo.28": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.15353702008724213,
                 0.012953044846653938,
@@ -872,7 +872,7 @@
             "density_params": 1.5035525560379028
         },
         "strokeNo.29": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07005871832370758,
                 0.04119972884654999,
@@ -965,7 +965,7 @@
             "density_params": 7.33306360244751
         },
         "strokeNo.32": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.018332408741116524,
                 0.04123536869883537,
@@ -996,7 +996,7 @@
             "density_params": 2.293107748031616
         },
         "strokeNo.33": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.13574296236038208,
                 0.01200255285948515,
@@ -1027,7 +1027,7 @@
             "density_params": 4.935449123382568
         },
         "strokeNo.34": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.023848384618759155,
                 0.02726198360323906,
@@ -1058,7 +1058,7 @@
             "density_params": 0.9704646468162537
         },
         "strokeNo.35": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.39375412464141846,
                 0.009999999776482582,
@@ -1120,7 +1120,7 @@
             "density_params": 1.8023710250854492
         },
         "strokeNo.37": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.11659297347068787,
                 0.06023217365145683,
@@ -1151,7 +1151,7 @@
             "density_params": 0.28241825103759766
         },
         "strokeNo.38": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01015192549675703,
                 0.022067127749323845,
@@ -1306,7 +1306,7 @@
             "density_params": 0.7173346281051636
         },
         "strokeNo.43": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1689913123846054,
                 0.08571049571037292,
@@ -1337,7 +1337,7 @@
             "density_params": 14.741718292236328
         },
         "strokeNo.44": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01900266669690609,
                 0.08746697753667831,
@@ -1368,7 +1368,7 @@
             "density_params": 8.325345993041992
         },
         "strokeNo.45": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06994040310382843,
                 0.179007425904274,
@@ -1399,7 +1399,7 @@
             "density_params": 2.72976016998291
         },
         "strokeNo.46": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06380899995565414,
                 0.4708215892314911,
@@ -1461,7 +1461,7 @@
             "density_params": 3.200106620788574
         },
         "strokeNo.48": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03559035062789917,
                 0.2877412736415863,
@@ -1647,7 +1647,7 @@
             "density_params": 2.1933181285858154
         },
         "strokeNo.54": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.08142039179801941,
                 0.09386883676052094,
@@ -1771,7 +1771,7 @@
             "density_params": 1.4460320472717285
         },
         "strokeNo.58": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.017300143837928772,
                 0.02574252150952816,
@@ -1802,7 +1802,7 @@
             "density_params": 3.0901401042938232
         },
         "strokeNo.59": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.20201928913593292,
                 0.15523555874824524,
@@ -1864,7 +1864,7 @@
             "density_params": 5.932878494262695
         },
         "strokeNo.61": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01044001616537571,
                 0.03640285134315491,
@@ -1926,7 +1926,7 @@
             "density_params": 0.6835972666740417
         },
         "strokeNo.63": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.20214228332042694,
                 0.07423292100429535,
@@ -2019,7 +2019,7 @@
             "density_params": 3.7097859382629395
         },
         "strokeNo.66": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010609092190861702,
                 0.04659165069460869,
@@ -2112,7 +2112,7 @@
             "density_params": 1.5461220741271973
         },
         "strokeNo.69": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.121479831635952,
                 0.0648854598402977,
@@ -2143,7 +2143,7 @@
             "density_params": 0.16728843748569489
         },
         "strokeNo.70": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07631787657737732,
                 0.12412074208259583,
@@ -2174,7 +2174,7 @@
             "density_params": 3.852243423461914
         },
         "strokeNo.71": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.13791190087795258,
@@ -2236,7 +2236,7 @@
             "density_params": 0.9212861061096191
         },
         "strokeNo.73": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.019341951236128807,
                 0.04764051362872124,
@@ -2360,7 +2360,7 @@
             "density_params": 1.7595419883728027
         },
         "strokeNo.77": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.047653939574956894,
                 0.3091624081134796,
@@ -2391,7 +2391,7 @@
             "density_params": 5.139321327209473
         },
         "strokeNo.78": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0848461464047432,
                 0.010054247453808784,
@@ -2422,7 +2422,7 @@
             "density_params": 14.654030799865723
         },
         "strokeNo.79": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.028573550283908844,
@@ -2453,7 +2453,7 @@
             "density_params": 0.47488725185394287
         },
         "strokeNo.80": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.019225317984819412,
                 0.04379500821232796,
@@ -2577,7 +2577,7 @@
             "density_params": 1.5818206071853638
         },
         "strokeNo.84": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.015817882493138313,
                 0.024847758933901787,
@@ -2670,7 +2670,7 @@
             "density_params": 5.1007304191589355
         },
         "strokeNo.87": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06248483434319496,
                 0.07325726002454758,
@@ -2732,7 +2732,7 @@
             "density_params": 3.537768602371216
         },
         "strokeNo.89": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04717077687382698,
                 0.012554853223264217,
@@ -2763,7 +2763,7 @@
             "density_params": 0.4150271713733673
         },
         "strokeNo.90": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.013387851417064667,
                 0.4298560917377472,
@@ -2825,7 +2825,7 @@
             "density_params": 1.6983755826950073
         },
         "strokeNo.92": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.016366170719265938,
                 0.02676520310342312,
@@ -2918,7 +2918,7 @@
             "density_params": 2.2044246196746826
         },
         "strokeNo.95": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06618138402700424,
                 0.0679095908999443,
@@ -2949,7 +2949,7 @@
             "density_params": 0.20377109944820404
         },
         "strokeNo.96": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.08217648416757584,
                 0.014910389669239521,
@@ -3011,7 +3011,7 @@
             "density_params": 5.357244968414307
         },
         "strokeNo.98": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.039551734924316406,
                 0.015421929769217968,
@@ -3042,7 +3042,7 @@
             "density_params": 0.836270809173584
         },
         "strokeNo.99": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.11304876953363419,
                 0.04485844820737839,
@@ -3197,7 +3197,7 @@
             "density_params": 6.4891767501831055
         },
         "strokeNo.104": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01207137294113636,
                 0.027488915249705315,
@@ -3290,7 +3290,7 @@
             "density_params": 2.2661118507385254
         },
         "strokeNo.107": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.017818758264183998,
                 0.044794969260692596,
@@ -3352,7 +3352,7 @@
             "density_params": 1.90846848487854
         },
         "strokeNo.109": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010977224446833134,
                 0.01155068725347519,
@@ -3445,7 +3445,7 @@
             "density_params": 1.4530885219573975
         },
         "strokeNo.112": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.027562005445361137,
                 0.249651238322258,
@@ -3507,7 +3507,7 @@
             "density_params": 2.032489776611328
         },
         "strokeNo.114": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05127459391951561,
                 0.09749160706996918,
@@ -3631,7 +3631,7 @@
             "density_params": 9.713846206665039
         },
         "strokeNo.118": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.021111154928803444,
                 0.015606502071022987,
@@ -3662,7 +3662,7 @@
             "density_params": 13.894390106201172
         },
         "strokeNo.119": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.22094710171222687,
                 0.03710470721125603,
@@ -3693,7 +3693,7 @@
             "density_params": 4.4632954597473145
         },
         "strokeNo.120": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01765848882496357,
                 0.0191891361027956,
@@ -3724,7 +3724,7 @@
             "density_params": 9.641524314880371
         },
         "strokeNo.121": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02408354915678501,
                 0.20290467143058777,
@@ -3848,7 +3848,7 @@
             "density_params": 2.2027220726013184
         },
         "strokeNo.125": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03403118997812271,
                 0.01877373829483986,
@@ -3910,7 +3910,7 @@
             "density_params": 1.0753567218780518
         },
         "strokeNo.127": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02946525253355503,
                 0.08944012969732285,
@@ -3941,7 +3941,7 @@
             "density_params": 3.3378069400787354
         },
         "strokeNo.128": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0729869157075882,
                 0.14017227292060852,
@@ -3972,7 +3972,7 @@
             "density_params": 2.7398297786712646
         },
         "strokeNo.129": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05013720318675041,
                 0.01066505815833807,
@@ -4065,7 +4065,7 @@
             "density_params": 1.4783265590667725
         },
         "strokeNo.132": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.08073440194129944,
                 0.041421983391046524,
@@ -4096,7 +4096,7 @@
             "density_params": 1.79935622215271
         },
         "strokeNo.133": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07054315507411957,
                 0.34555673599243164,
@@ -4189,7 +4189,7 @@
             "density_params": 5.416214466094971
         },
         "strokeNo.136": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1603720486164093,
                 0.13393521308898926,
@@ -4282,7 +4282,7 @@
             "density_params": 1.724409818649292
         },
         "strokeNo.139": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.18238121271133423,
                 0.09227141737937927,
@@ -4313,7 +4313,7 @@
             "density_params": 1.765221357345581
         },
         "strokeNo.140": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.013386955484747887,
                 0.011159928515553474,
@@ -4437,7 +4437,7 @@
             "density_params": 3.481802225112915
         },
         "strokeNo.144": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.12203148752450943,
                 0.05690564215183258,
@@ -4592,7 +4592,7 @@
             "density_params": 0.8209840059280396
         },
         "strokeNo.149": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.015063297003507614,
                 0.04063691571354866,
@@ -4623,7 +4623,7 @@
             "density_params": 0.3569773733615875
         },
         "strokeNo.150": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.012371588498353958,
                 0.49662378430366516,
@@ -4685,7 +4685,7 @@
             "density_params": 1.6021217107772827
         },
         "strokeNo.152": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05308947339653969,
                 0.03108314611017704,
@@ -4778,7 +4778,7 @@
             "density_params": 3.33425235748291
         },
         "strokeNo.155": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010036029852926731,
                 0.024910693988204002,
@@ -4809,7 +4809,7 @@
             "density_params": 1.231082558631897
         },
         "strokeNo.156": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010702388361096382,
                 0.14737853407859802,
@@ -4840,7 +4840,7 @@
             "density_params": 18.10909652709961
         },
         "strokeNo.157": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1619642972946167,
                 0.08060316741466522,
@@ -4871,7 +4871,7 @@
             "density_params": 4.376094341278076
         },
         "strokeNo.158": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.021387141197919846,
                 0.0767858698964119,
@@ -4933,7 +4933,7 @@
             "density_params": 4.35269021987915
         },
         "strokeNo.160": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.13127286732196808,
                 0.11329115182161331,
@@ -4964,7 +4964,7 @@
             "density_params": 2.7956018447875977
         },
         "strokeNo.161": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.045554596930742264,
                 0.07543706148862839,
@@ -5057,7 +5057,7 @@
             "density_params": 3.705310106277466
         },
         "strokeNo.164": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06336483359336853,
                 0.2949908673763275,
@@ -5088,7 +5088,7 @@
             "density_params": 5.1976237297058105
         },
         "strokeNo.165": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04247511923313141,
                 0.058868687599897385,
@@ -5119,7 +5119,7 @@
             "density_params": 5.1362457275390625
         },
         "strokeNo.166": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.018037309870123863,
                 0.016199765726923943,
@@ -5150,7 +5150,7 @@
             "density_params": 3.0096662044525146
         },
         "strokeNo.167": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.015803048387169838,
                 0.27626433968544006,
@@ -5212,7 +5212,7 @@
             "density_params": 2.638169288635254
         },
         "strokeNo.169": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0422937385737896,
                 0.020423253998160362,
@@ -5243,7 +5243,7 @@
             "density_params": 0.5176839828491211
         },
         "strokeNo.170": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.021950379014015198,
                 0.019917916506528854,
@@ -5274,7 +5274,7 @@
             "density_params": 3.273552656173706
         },
         "strokeNo.171": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.052288539707660675,
                 0.14380019903182983,
@@ -5367,7 +5367,7 @@
             "density_params": 1.2617261409759521
         },
         "strokeNo.174": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010100623592734337,
                 0.13138167560100555,
@@ -5398,7 +5398,7 @@
             "density_params": 0.3286685347557068
         },
         "strokeNo.175": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03255598247051239,
                 0.13461771607398987,
@@ -5429,7 +5429,7 @@
             "density_params": 1.5295418500900269
         },
         "strokeNo.176": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01663539931178093,
                 0.1206718310713768,
@@ -5553,7 +5553,7 @@
             "density_params": 2.9548704624176025
         },
         "strokeNo.180": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.17025026679039001,
                 0.2758348882198334,
@@ -5584,7 +5584,7 @@
             "density_params": 2.949267625808716
         },
         "strokeNo.181": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.018251674249768257,
                 0.013661391101777554,
@@ -5615,7 +5615,7 @@
             "density_params": 1.0183342695236206
         },
         "strokeNo.182": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0124082425609231,
                 0.009999999776482582,
@@ -5646,7 +5646,7 @@
             "density_params": 0.6740474700927734
         },
         "strokeNo.183": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05847003683447838,
                 0.2121686190366745,
@@ -5677,7 +5677,7 @@
             "density_params": 3.1623969078063965
         },
         "strokeNo.184": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06219051033258438,
                 0.013750371523201466,
@@ -5708,7 +5708,7 @@
             "density_params": 3.5100455284118652
         },
         "strokeNo.185": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.011845714412629604,
                 0.030591966584324837,
@@ -5770,7 +5770,7 @@
             "density_params": 1.032171368598938
         },
         "strokeNo.187": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.14391997456550598,
                 0.009999999776482582,
@@ -5863,7 +5863,7 @@
             "density_params": 3.994138240814209
         },
         "strokeNo.190": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06288348138332367,
                 0.17913320660591125,
@@ -5894,7 +5894,7 @@
             "density_params": 1.2396947145462036
         },
         "strokeNo.191": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010007034987211227,
                 0.009999999776482582,
@@ -5956,7 +5956,7 @@
             "density_params": 2.0451979637145996
         },
         "strokeNo.193": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02077961154282093,
                 0.09455599635839462,
@@ -6018,7 +6018,7 @@
             "density_params": 7.076993942260742
         },
         "strokeNo.195": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03716296702623367,
                 0.13383883237838745,
@@ -6049,7 +6049,7 @@
             "density_params": 5.812166690826416
         },
         "strokeNo.196": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.012148896232247353,
                 0.15300177037715912,
@@ -6080,7 +6080,7 @@
             "density_params": 7.015276908874512
         },
         "strokeNo.197": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.11421005427837372,
                 0.012544575147330761,
@@ -6111,7 +6111,7 @@
             "density_params": 0.0
         },
         "strokeNo.198": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.018923932686448097,
                 0.018529796972870827,
@@ -6173,7 +6173,7 @@
             "density_params": 5.228620529174805
         },
         "strokeNo.200": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.012948407791554928,
                 0.07883762568235397,
@@ -6235,7 +6235,7 @@
             "density_params": 0.938485860824585
         },
         "strokeNo.202": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.018925553187727928,
                 0.025340262800455093,
@@ -6328,7 +6328,7 @@
             "density_params": 4.645679950714111
         },
         "strokeNo.205": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01848270744085312,
                 0.0195758193731308,
@@ -6359,7 +6359,7 @@
             "density_params": 8.706165313720703
         },
         "strokeNo.206": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.15684100985527039,
                 0.1453859508037567,
@@ -6421,7 +6421,7 @@
             "density_params": 6.351205348968506
         },
         "strokeNo.208": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01969785802066326,
                 0.009999999776482582,
@@ -6576,7 +6576,7 @@
             "density_params": 5.112460136413574
         },
         "strokeNo.213": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07155995815992355,
                 0.1319417804479599,
@@ -6638,7 +6638,7 @@
             "density_params": 0.3323149085044861
         },
         "strokeNo.215": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01927991583943367,
                 0.17013968527317047,
@@ -6731,7 +6731,7 @@
             "density_params": 8.245369911193848
         },
         "strokeNo.218": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010831817984580994,
                 0.040827613323926926,
@@ -6762,7 +6762,7 @@
             "density_params": 4.654162406921387
         },
         "strokeNo.219": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.016254650428891182,
                 0.03549525886774063,
@@ -6948,7 +6948,7 @@
             "density_params": 0.8939226865768433
         },
         "strokeNo.225": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.18216340243816376,
                 0.11877353489398956,
@@ -7103,7 +7103,7 @@
             "density_params": 1.0955222845077515
         },
         "strokeNo.230": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1485321968793869,
                 0.07136199623346329,
@@ -7134,7 +7134,7 @@
             "density_params": 1.013187289237976
         },
         "strokeNo.231": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.043454866856336594,
                 0.012709414586424828,
@@ -7165,7 +7165,7 @@
             "density_params": 6.052226543426514
         },
         "strokeNo.232": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05551039054989815,
                 0.07436442375183105,
@@ -7227,7 +7227,7 @@
             "density_params": 6.99398946762085
         },
         "strokeNo.234": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.012926418334245682,
                 0.021754082292318344,
@@ -7289,7 +7289,7 @@
             "density_params": 9.442397117614746
         },
         "strokeNo.236": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0942157730460167,
                 0.015548585914075375,
@@ -7320,7 +7320,7 @@
             "density_params": 8.591689109802246
         },
         "strokeNo.237": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01142742671072483,
                 0.06502104550600052,
@@ -7351,7 +7351,7 @@
             "density_params": 0.308421790599823
         },
         "strokeNo.238": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.016581915318965912,
                 0.03589777275919914,
@@ -7444,7 +7444,7 @@
             "density_params": 0.29760128259658813
         },
         "strokeNo.241": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01342778094112873,
                 0.02404661662876606,
@@ -7537,7 +7537,7 @@
             "density_params": 3.587054967880249
         },
         "strokeNo.244": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.019602948799729347,
                 0.010054920800030231,
@@ -7599,7 +7599,7 @@
             "density_params": 17.990108489990234
         },
         "strokeNo.246": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05100272223353386,
                 0.018377328291535378,
@@ -7661,7 +7661,7 @@
             "density_params": 3.4861977100372314
         },
         "strokeNo.248": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.014778108336031437,
                 0.015653260052204132,
@@ -7754,7 +7754,7 @@
             "density_params": 4.0761542320251465
         },
         "strokeNo.251": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01762573979794979,
                 0.023484257981181145,
@@ -7878,7 +7878,7 @@
             "density_params": 2.1834716796875
         },
         "strokeNo.255": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03540126979351044,
                 0.012548059225082397,
@@ -7909,7 +7909,7 @@
             "density_params": 0.6934785842895508
         },
         "strokeNo.256": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07644563168287277,
                 0.045884400606155396,
@@ -7940,7 +7940,7 @@
             "density_params": 0.9999027252197266
         },
         "strokeNo.257": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.045446958392858505,
                 0.27966055274009705,
@@ -7971,7 +7971,7 @@
             "density_params": 1.8779139518737793
         },
         "strokeNo.258": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.020466210320591927,
                 0.03732387721538544,
@@ -8002,7 +8002,7 @@
             "density_params": 7.518803596496582
         },
         "strokeNo.259": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.11376027017831802,
                 0.011869190260767937,
@@ -8126,7 +8126,7 @@
             "density_params": 0.7835713028907776
         },
         "strokeNo.263": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01945023238658905,
                 0.04797995463013649,
@@ -8157,7 +8157,7 @@
             "density_params": 1.9698952436447144
         },
         "strokeNo.264": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.08971787244081497,
                 0.033855073153972626,
@@ -8188,7 +8188,7 @@
             "density_params": 1.6889294385910034
         },
         "strokeNo.265": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02756832167506218,
                 0.13421101868152618,
@@ -8219,7 +8219,7 @@
             "density_params": 2.1422841548919678
         },
         "strokeNo.266": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.014284787699580193,
                 0.022376108914613724,
@@ -8250,7 +8250,7 @@
             "density_params": 14.071871757507324
         },
         "strokeNo.267": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.08425303548574448,
                 0.23431915044784546,
@@ -8281,7 +8281,7 @@
             "density_params": 0.9227167367935181
         },
         "strokeNo.268": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0177617184817791,
                 0.012397984974086285,
@@ -8343,7 +8343,7 @@
             "density_params": 1.7935128211975098
         },
         "strokeNo.270": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1339181810617447,
                 0.051057204604148865,
@@ -8405,7 +8405,7 @@
             "density_params": 3.317497730255127
         },
         "strokeNo.272": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.2695654332637787,
                 0.06881288439035416,
@@ -8436,7 +8436,7 @@
             "density_params": 2.268315553665161
         },
         "strokeNo.273": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02338758297264576,
                 0.08147265017032623,
@@ -8498,7 +8498,7 @@
             "density_params": 0.2116101235151291
         },
         "strokeNo.275": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01565202698111534,
                 0.17443567514419556,
@@ -8560,7 +8560,7 @@
             "density_params": 3.7993760108947754
         },
         "strokeNo.277": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.08206567168235779,
                 0.015025673434138298,
@@ -8591,7 +8591,7 @@
             "density_params": 7.1973700523376465
         },
         "strokeNo.278": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.016377337276935577,
                 0.02548523247241974,
@@ -8622,7 +8622,7 @@
             "density_params": 20.149578094482422
         },
         "strokeNo.279": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.027755912393331528,
                 0.1397409290075302,
@@ -8684,7 +8684,7 @@
             "density_params": 3.430969476699829
         },
         "strokeNo.281": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.014347354881465435,
                 0.013896547257900238,
@@ -8715,7 +8715,7 @@
             "density_params": 3.7983803749084473
         },
         "strokeNo.282": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.016286451369524002,
                 0.1982966959476471,
@@ -8777,7 +8777,7 @@
             "density_params": 7.309613227844238
         },
         "strokeNo.284": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.015438583679497242,
@@ -8839,7 +8839,7 @@
             "density_params": 6.0081305503845215
         },
         "strokeNo.286": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.013081282377243042,
                 0.02938310243189335,
@@ -8870,7 +8870,7 @@
             "density_params": 7.051013946533203
         },
         "strokeNo.287": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.017560800537467003,
                 0.20497117936611176,
@@ -8932,7 +8932,7 @@
             "density_params": 5.839014053344727
         },
         "strokeNo.289": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.026398655027151108,
                 0.014208192005753517,
@@ -8963,7 +8963,7 @@
             "density_params": 2.15946102142334
         },
         "strokeNo.290": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03228984400629997,
                 0.06876204907894135,
@@ -8994,7 +8994,7 @@
             "density_params": 4.323781967163086
         },
         "strokeNo.291": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.09156159311532974,
                 0.13800150156021118,
@@ -9025,7 +9025,7 @@
             "density_params": 0.9742403626441956
         },
         "strokeNo.292": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01943989284336567,
                 0.05947369337081909,
@@ -9056,7 +9056,7 @@
             "density_params": 4.15266227722168
         },
         "strokeNo.293": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06599012017250061,
                 0.09399809688329697,
@@ -9087,7 +9087,7 @@
             "density_params": 0.5013676285743713
         },
         "strokeNo.294": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.020407622680068016,
                 0.015049520879983902,
@@ -9149,7 +9149,7 @@
             "density_params": 2.4163882732391357
         },
         "strokeNo.296": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.031011227518320084,
                 0.07280337065458298,
@@ -9180,7 +9180,7 @@
             "density_params": 0.7891851663589478
         },
         "strokeNo.297": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07197275757789612,
                 0.0877600833773613,
@@ -9273,7 +9273,7 @@
             "density_params": 4.6556572914123535
         },
         "strokeNo.300": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01698710210621357,
                 0.021002234891057014,
@@ -9335,7 +9335,7 @@
             "density_params": 0.6356284618377686
         },
         "strokeNo.302": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.012703025713562965,
                 0.013930405490100384,
@@ -9366,7 +9366,7 @@
             "density_params": 7.278205394744873
         },
         "strokeNo.303": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0229041650891304,
                 0.05411737412214279,
@@ -9397,7 +9397,7 @@
             "density_params": 0.6151581406593323
         },
         "strokeNo.304": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07036443799734116,
                 0.07075322419404984,
@@ -9490,7 +9490,7 @@
             "density_params": 1.5445194244384766
         },
         "strokeNo.307": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.031000157818198204,
                 0.09798561781644821,
@@ -9521,7 +9521,7 @@
             "density_params": 2.3314480781555176
         },
         "strokeNo.308": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.09342976659536362,
@@ -9552,7 +9552,7 @@
             "density_params": 3.2193796634674072
         },
         "strokeNo.309": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02160247229039669,
                 0.009999999776482582,
@@ -9583,7 +9583,7 @@
             "density_params": 2.0955631732940674
         },
         "strokeNo.310": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.016372719779610634,
                 0.05829634517431259,
@@ -9614,7 +9614,7 @@
             "density_params": 0.7178230881690979
         },
         "strokeNo.311": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.021526431664824486,
                 0.0411016047000885,
@@ -9676,7 +9676,7 @@
             "density_params": 0.7589724659919739
         },
         "strokeNo.313": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05819406360387802,
                 0.04934791475534439,
@@ -9707,7 +9707,7 @@
             "density_params": 0.10290538519620895
         },
         "strokeNo.314": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0989934578537941,
                 0.016576888039708138,
@@ -9738,7 +9738,7 @@
             "density_params": 0.9462828636169434
         },
         "strokeNo.315": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.10936025530099869,
                 0.01805088296532631,
@@ -9769,7 +9769,7 @@
             "density_params": 2.8383569717407227
         },
         "strokeNo.316": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.014127715490758419,
                 0.22218632698059082,
@@ -9800,7 +9800,7 @@
             "density_params": 5.2358551025390625
         },
         "strokeNo.317": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04206244647502899,
                 0.0198160782456398,
@@ -9862,7 +9862,7 @@
             "density_params": 2.8440873622894287
         },
         "strokeNo.319": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.016078241169452667,
                 0.03196604177355766,
@@ -9893,7 +9893,7 @@
             "density_params": 5.979815483093262
         },
         "strokeNo.320": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.034519609063863754,
                 0.06348355859518051,
@@ -9986,7 +9986,7 @@
             "density_params": 0.3854096531867981
         },
         "strokeNo.323": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.019434746354818344,
                 0.029774751514196396,
@@ -10110,7 +10110,7 @@
             "density_params": 3.197000503540039
         },
         "strokeNo.327": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04848252981901169,
                 0.03312704339623451,
@@ -10172,7 +10172,7 @@
             "density_params": 0.2940276563167572
         },
         "strokeNo.329": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.02751755900681019,
@@ -10265,7 +10265,7 @@
             "density_params": 12.832511901855469
         },
         "strokeNo.332": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.013148514553904533,
@@ -10327,7 +10327,7 @@
             "density_params": 0.016310373321175575
         },
         "strokeNo.334": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02137109823524952,
                 0.01372639648616314,
@@ -10389,7 +10389,7 @@
             "density_params": 4.017646789550781
         },
         "strokeNo.336": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.012331124395132065,
                 0.049493297934532166,
@@ -10451,7 +10451,7 @@
             "density_params": 4.568213939666748
         },
         "strokeNo.338": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04610807076096535,
                 0.06747475266456604,
@@ -10482,7 +10482,7 @@
             "density_params": 0.6933421492576599
         },
         "strokeNo.339": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0638800784945488,
                 0.019121404737234116,
@@ -10606,7 +10606,7 @@
             "density_params": 0.21010397374629974
         },
         "strokeNo.343": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.024050550535321236,
                 0.015148995444178581,
@@ -10637,7 +10637,7 @@
             "density_params": 0.6268285512924194
         },
         "strokeNo.344": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.016423705965280533,
                 0.020910615101456642,
@@ -10668,7 +10668,7 @@
             "density_params": 1.4219951629638672
         },
         "strokeNo.345": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03701316565275192,
                 0.010335534811019897,
@@ -10730,7 +10730,7 @@
             "density_params": 1.5783169269561768
         },
         "strokeNo.347": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.13368605077266693,
                 0.05213688313961029,
@@ -10761,7 +10761,7 @@
             "density_params": 0.44172778725624084
         },
         "strokeNo.348": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01130535826086998,
                 0.02886934205889702,
@@ -10885,7 +10885,7 @@
             "density_params": 1.2091583013534546
         },
         "strokeNo.352": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03780177980661392,
                 0.07274050265550613,
@@ -10916,7 +10916,7 @@
             "density_params": 2.4754414558410645
         },
         "strokeNo.353": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02447253279387951,
                 0.18841010332107544,
@@ -10947,7 +10947,7 @@
             "density_params": 4.186337947845459
         },
         "strokeNo.354": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.023449208587408066,
                 0.013101267628371716,
@@ -10978,7 +10978,7 @@
             "density_params": 2.4187986850738525
         },
         "strokeNo.355": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.16484583914279938,
                 0.02295508049428463,
@@ -11040,7 +11040,7 @@
             "density_params": 1.0450671911239624
         },
         "strokeNo.357": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03339878469705582,
                 0.05108292028307915,
@@ -11071,7 +11071,7 @@
             "density_params": 1.1978325843811035
         },
         "strokeNo.358": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.10483437776565552,
                 0.020932424813508987,
@@ -11102,7 +11102,7 @@
             "density_params": 6.962168216705322
         },
         "strokeNo.359": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.02243824116885662,
@@ -11164,7 +11164,7 @@
             "density_params": 1.9091814756393433
         },
         "strokeNo.361": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03600887954235077,
                 0.010557628236711025,
@@ -11226,7 +11226,7 @@
             "density_params": 1.4097517728805542
         },
         "strokeNo.363": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.038799285888671875,
                 0.02913864701986313,
@@ -11319,7 +11319,7 @@
             "density_params": 1.9385617971420288
         },
         "strokeNo.366": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05492605268955231,
                 0.0410844087600708,
@@ -11350,7 +11350,7 @@
             "density_params": 3.818323850631714
         },
         "strokeNo.367": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.024698875844478607,
                 0.039295922964811325,
@@ -11412,7 +11412,7 @@
             "density_params": 7.461365222930908
         },
         "strokeNo.369": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04910866543650627,
                 0.08020107448101044,
@@ -11474,7 +11474,7 @@
             "density_params": 1.2823011875152588
         },
         "strokeNo.371": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1125013679265976,
                 0.01199605967849493,
@@ -11505,7 +11505,7 @@
             "density_params": 4.095016956329346
         },
         "strokeNo.372": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03524250164628029,
                 0.04051274061203003,
@@ -11536,7 +11536,7 @@
             "density_params": 0.9374849200248718
         },
         "strokeNo.373": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01961158961057663,
                 0.021048765629529953,
@@ -11629,7 +11629,7 @@
             "density_params": 4.863335609436035
         },
         "strokeNo.376": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.017989113926887512,
                 0.021747667342424393,
@@ -11722,7 +11722,7 @@
             "density_params": 2.7476704120635986
         },
         "strokeNo.379": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.09582863003015518,
                 0.024925630539655685,
@@ -11784,7 +11784,7 @@
             "density_params": 2.7223849296569824
         },
         "strokeNo.381": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03172561153769493,
                 0.1453617513179779,
@@ -11815,7 +11815,7 @@
             "density_params": 0.6183729767799377
         },
         "strokeNo.382": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03424140065908432,
                 0.013715787790715694,
@@ -11846,7 +11846,7 @@
             "density_params": 0.8059786558151245
         },
         "strokeNo.383": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.069827139377594,
                 0.07741980999708176,
@@ -11877,7 +11877,7 @@
             "density_params": 2.5701613426208496
         },
         "strokeNo.384": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.03859223797917366,
@@ -11908,7 +11908,7 @@
             "density_params": 4.8971357345581055
         },
         "strokeNo.385": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.038138002157211304,
                 0.08245885372161865,
@@ -11939,7 +11939,7 @@
             "density_params": 0.09668470174074173
         },
         "strokeNo.386": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04241706803441048,
                 0.012044630944728851,
@@ -12094,7 +12094,7 @@
             "density_params": 2.0081186294555664
         },
         "strokeNo.391": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.027018124237656593,
                 0.059394631534814835,
@@ -12125,7 +12125,7 @@
             "density_params": 2.4009382724761963
         },
         "strokeNo.392": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01864595338702202,
                 0.04358578845858574,
@@ -12187,7 +12187,7 @@
             "density_params": 0.09287174046039581
         },
         "strokeNo.394": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0673198327422142,
                 0.012212934903800488,
@@ -12373,7 +12373,7 @@
             "density_params": 0.923784077167511
         },
         "strokeNo.400": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04240567237138748,
                 0.011824599467217922,
@@ -12404,7 +12404,7 @@
             "density_params": 2.977592945098877
         },
         "strokeNo.401": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02057887241244316,
                 0.022326583042740822,
@@ -12435,7 +12435,7 @@
             "density_params": 5.164028167724609
         },
         "strokeNo.402": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01470598392188549,
                 0.009999999776482582,
@@ -12497,7 +12497,7 @@
             "density_params": 2.715009927749634
         },
         "strokeNo.404": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1075887382030487,
                 0.026743775233626366,
@@ -12559,7 +12559,7 @@
             "density_params": 1.8973528146743774
         },
         "strokeNo.406": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04373346269130707,
                 0.14591795206069946,
@@ -12590,7 +12590,7 @@
             "density_params": 0.33439233899116516
         },
         "strokeNo.407": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.08655193448066711,
                 0.05400080978870392,
@@ -12621,7 +12621,7 @@
             "density_params": 0.7208143472671509
         },
         "strokeNo.408": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.023998048156499863,
                 0.03225331753492355,
@@ -12776,7 +12776,7 @@
             "density_params": 0.40043067932128906
         },
         "strokeNo.413": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.048124127089977264,
                 0.022441508248448372,
@@ -12807,7 +12807,7 @@
             "density_params": 3.06754732131958
         },
         "strokeNo.414": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01042110100388527,
                 0.03253532201051712,
@@ -12838,7 +12838,7 @@
             "density_params": 2.4363675117492676
         },
         "strokeNo.415": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.054114215075969696,
@@ -12931,7 +12931,7 @@
             "density_params": 3.406608819961548
         },
         "strokeNo.418": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0375218465924263,
                 0.011656980030238628,
@@ -12962,7 +12962,7 @@
             "density_params": 1.1778854131698608
         },
         "strokeNo.419": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.013448566198348999,
                 0.043306779116392136,
@@ -13055,7 +13055,7 @@
             "density_params": 1.3069127798080444
         },
         "strokeNo.422": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.015044216997921467,
                 0.018243998289108276,
@@ -13086,7 +13086,7 @@
             "density_params": 1.6061269044876099
         },
         "strokeNo.423": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.01859120838344097,
                 0.020399631932377815,
@@ -13241,7 +13241,7 @@
             "density_params": 1.204577088356018
         },
         "strokeNo.428": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0142374187707901,
                 0.02736850082874298,
@@ -13272,7 +13272,7 @@
             "density_params": 0.05663612112402916
         },
         "strokeNo.429": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04213457182049751,
                 0.019672280177474022,
@@ -13303,7 +13303,7 @@
             "density_params": 1.476773977279663
         },
         "strokeNo.430": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.055014774203300476,
                 0.0187852643430233,
@@ -13365,7 +13365,7 @@
             "density_params": 2.9685564041137695
         },
         "strokeNo.432": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.15238027274608612,
                 0.01944652386009693,
@@ -13644,7 +13644,7 @@
             "density_params": 1.458335518836975
         },
         "strokeNo.441": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010696865618228912,
                 0.04144516587257385,
@@ -13675,7 +13675,7 @@
             "density_params": 0.573051393032074
         },
         "strokeNo.442": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.017775800079107285,
                 0.10246606171131134,
@@ -13861,7 +13861,7 @@
             "density_params": 0.24727140367031097
         },
         "strokeNo.448": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04034804925322533,
                 0.009999999776482582,
@@ -13892,7 +13892,7 @@
             "density_params": 1.7676355838775635
         },
         "strokeNo.449": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07776322215795517,
                 0.014769366942346096,
@@ -13954,7 +13954,7 @@
             "density_params": 1.9844725131988525
         },
         "strokeNo.451": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05291442573070526,
                 0.05980391427874565,
@@ -13985,7 +13985,7 @@
             "density_params": 2.695249557495117
         },
         "strokeNo.452": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.013697761110961437,
                 0.024265194311738014,
@@ -14016,7 +14016,7 @@
             "density_params": 1.4514456987380981
         },
         "strokeNo.453": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.022850798442959785,
                 0.07963129878044128,
@@ -14047,7 +14047,7 @@
             "density_params": 0.946454644203186
         },
         "strokeNo.454": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.09071048349142075,
                 0.08141739666461945,
@@ -14140,7 +14140,7 @@
             "density_params": 1.190040111541748
         },
         "strokeNo.457": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0942278578877449,
                 0.04584360495209694,
@@ -14171,7 +14171,7 @@
             "density_params": 1.463452935218811
         },
         "strokeNo.458": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03009517677128315,
                 0.04199107736349106,
@@ -14233,7 +14233,7 @@
             "density_params": 1.1949596405029297
         },
         "strokeNo.460": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07731284946203232,
                 0.08086449652910233,
@@ -14295,7 +14295,7 @@
             "density_params": 0.8014556765556335
         },
         "strokeNo.462": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.04448108375072479,
                 0.03667856380343437,
@@ -14388,7 +14388,7 @@
             "density_params": 1.8469699621200562
         },
         "strokeNo.465": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.1852557212114334,
                 0.04101524129509926,
@@ -14636,7 +14636,7 @@
             "density_params": 0.23078422248363495
         },
         "strokeNo.473": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03903408348560333,
                 0.03258197009563446,
@@ -14667,7 +14667,7 @@
             "density_params": 0.13410449028015137
         },
         "strokeNo.474": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.10687295347452164,
                 0.01964094303548336,
@@ -14729,7 +14729,7 @@
             "density_params": 0.8827673196792603
         },
         "strokeNo.476": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.024135231971740723,
                 0.06306137144565582,
@@ -14760,7 +14760,7 @@
             "density_params": 0.6961805820465088
         },
         "strokeNo.477": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.045820239931344986,
                 0.04463407024741173,
@@ -14791,7 +14791,7 @@
             "density_params": 0.971724808216095
         },
         "strokeNo.478": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.009999999776482582,
                 0.09238792210817337,
@@ -14822,7 +14822,7 @@
             "density_params": 2.1966373920440674
         },
         "strokeNo.479": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.019861942157149315,
                 0.06703023612499237,
@@ -14853,7 +14853,7 @@
             "density_params": 1.397047996520996
         },
         "strokeNo.480": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.023379651829600334,
                 0.027242861688137054,
@@ -14884,7 +14884,7 @@
             "density_params": 1.5318478345870972
         },
         "strokeNo.481": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0224149189889431,
                 0.013087944127619267,
@@ -14915,7 +14915,7 @@
             "density_params": 1.9469879865646362
         },
         "strokeNo.482": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.02219933457672596,
                 0.109915591776371,
@@ -14977,7 +14977,7 @@
             "density_params": 0.23045574128627777
         },
         "strokeNo.484": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.05849861353635788,
                 0.011805676855146885,
@@ -15008,7 +15008,7 @@
             "density_params": 1.677444577217102
         },
         "strokeNo.485": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.019854282960295677,
                 0.009999999776482582,
@@ -15039,7 +15039,7 @@
             "density_params": 0.6951537728309631
         },
         "strokeNo.486": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.03929968550801277,
                 0.11376778781414032,
@@ -15101,7 +15101,7 @@
             "density_params": 0.878092885017395
         },
         "strokeNo.488": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.010119831189513206,
                 0.010069102048873901,
@@ -15132,7 +15132,7 @@
             "density_params": 0.6904982328414917
         },
         "strokeNo.489": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0201258547604084,
                 0.0757073312997818,
@@ -15194,7 +15194,7 @@
             "density_params": 0.8440324664115906
         },
         "strokeNo.491": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.07447046041488647,
                 0.010136439464986324,
@@ -15225,7 +15225,7 @@
             "density_params": 1.0325590372085571
         },
         "strokeNo.492": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.18255497515201569,
                 0.009999999776482582,
@@ -15256,7 +15256,7 @@
             "density_params": 1.7755495309829712
         },
         "strokeNo.493": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.043446134775877,
                 0.04507986456155777,
@@ -15287,7 +15287,7 @@
             "density_params": 0.9294213056564331
         },
         "strokeNo.494": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.027905020862817764,
                 0.04380863904953003,
@@ -15349,7 +15349,7 @@
             "density_params": 1.6974912881851196
         },
         "strokeNo.496": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.0290500670671463,
                 0.05087745934724808,
@@ -15473,7 +15473,7 @@
             "density_params": 0.6247382164001465
         },
         "strokeNo.500": {
-            "stroke_type": "cube_a",
+            "stroke_type": "aabb",
             "shape_params": [
                 0.06462569534778595,
                 0.024136288091540337,

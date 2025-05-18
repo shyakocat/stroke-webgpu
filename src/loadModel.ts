@@ -1,8 +1,10 @@
 import { mat4, vec3, quat } from 'gl-matrix';
 //import { WebIO } from '@gltf-transform/core';
 //@ts-ignore
-import modelData from '../models/lego_cylinder/temp.json'
-//import modelData from '../models/lego_mix_ellipsoid_obb_line/strokes.proc.json'
+//import modelData from '../models/chair_line_1000/stroke.json'
+//import modelData from '../models/lego_ellipsoid_1250/stroke.json'
+//import modelData from '../models/lego_cylinder/temp.json'
+import modelData from '../models/lego_mix_ellipsoid_obb_line/strokes.proc.json'
 //import modelData from '../models/lego_mix_line_aabb/temp.json'
 //import modelData from '../models/lego_mix_ellipsoid_tetrahedron/temp.json'
 //import modelData from '../models/lego_ellipsoid_softmax/stroke.json'
@@ -63,65 +65,72 @@ export async function loadModel(): Promise<Float32Array> {
 		"tetrahedron": 3,
 		"octahedron": 4,
 		"capsule": 5,
+		"line": 5,
+		"line_a": 5,
 		"cubic_bezier": 5,
 		"cube_a": 2,
+		"aabb": 2,
 		"tetrahedron_a": 3,
 		"octahedron_a": 4,
 		"capsule_a": 5,
-		"line": 5,
 		"cylinder": 6,
 		"roundcube": 7,
-	};
+	};	// 带_a的指multiscale，否则是singlescale
 	const finalPositions = [];
 
-	modelData.shape_type = "roundcube"
-	modelData.stroke_params = {
-		// "strokeNo.1": {
-		// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
-		// 	color_params: [1.0, 0, 0],
-		// 	density_params: 1.0,
-		// },
-		// "strokeNo.2": {
-		// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -2, 0, 0, 1.0, 0.6],
-		// 	color_params: [0, 1.0, 0],
-		// 	density_params: 1.0,
-		// },
-		// "strokeNo.3": {
-		// 	shape_params: [0.5, 1.0, 0.7, 0.1, 0.5, -0.2, 0.1, -0.5, 0.33],
-		// 	color_params: [0, 0, 1.0],
-		// 	density_params: 1.0,
-		// },
-		// "strokeNo.4": {
-		// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -4, 0, 0],
-		// 	color_params: [0, 0, 1.0],
-		// 	density_params: 1.0,
-		// },
-		// "strokeNo.5": {
-		// 	shape_params: [0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 0.1, 0.1],
-		// 	color_params: [1.0, 0, 0],
-		// 	density_params: 1.0,
-		// },
-		// "strokeNo.6": {
-		// 	shape_params: [1.0, 0, 0, 0, 0, 0, 0, 0.1, 2],
-		// 	color_params: [0, 1, 0],
-		// 	density_params: 1.0,
-		// },
-		// "strokeNo.7": {
-		// 	shape_params: [1.0, 0, 0, 0, 0, 0, 1, 0.1, 0.5, 2],
-		// 	color_params: [1, 0, 0],
-		// 	density_params: 1.0,
-		// },
-		// "strokeNo.8": {
-		// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, ],
-		// 	color_params: [1.0, 0, 0],
-		// 	density_params: 1.0,
-		// },
-		"strokeNo.9": {
-			shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0.33],
-			color_params: [1.0, 0, 0],
-			density_params: 1.0,
-		},
-	}
+	// modelData.shape_type = "roundcube"
+	// modelData.stroke_params = {
+	// 	// "strokeNo.1": {
+	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
+	// 	// 	color_params: [1.0, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.2": {
+	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -2, 0, 0, 1.0, 0.6],
+	// 	// 	color_params: [0, 1.0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.3": {
+	// 	// 	shape_params: [0.5, 1.0, 0.7, 0.1, 0.5, -0.2, 0.1, -0.5, 0.33],
+	// 	// 	color_params: [0, 0, 1.0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.4": {
+	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, -4, 0, 0],
+	// 	// 	color_params: [0, 0, 1.0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.5": {
+	// 	// 	shape_params: [0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.7, 0.7, 0.7, 1.0, 1.0, 1.0, 0.1, 0.1],
+	// 	// 	color_params: [1.0, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.6": {
+	// 	// 	shape_params: [1.0, 0, 0, 0, 0, 0, 0, 0.1, 2],
+	// 	// 	color_params: [0, 1, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.7": {
+	// 	// 	shape_params: [1.0, 0, 0, 0, 0, 0, 1, 0.1, 0.5, 2],
+	// 	// 	color_params: [1, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.8": {
+	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, ],
+	// 	// 	color_params: [1.0, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	"strokeNo.9": {
+	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0.33],
+	// 		color_params: [1.0, 0, 0],
+	// 		density_params: 1.0,
+	// 	},
+	// 	"strokeNo.10": {
+	// 		shape_params: [0.9, 0.5, 2.0, 1, 3, 0.3, 0, 0, 0, 0.8],
+	// 		color_params: [0, 1.0, 0],
+	// 		density_params: 1.0,
+	// 	},
+	// }
 
 	for (let [strokeNo, o] of Object.entries(modelData.stroke_params)) {
 		const m = /strokeNo.(\d+)/.exec(strokeNo);
@@ -211,6 +220,20 @@ export async function loadModel(): Promise<Float32Array> {
 			finalPositions.push(stroke_id);
 			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
 		}
+		else if (shape_type === "aabb") {
+			let ps = o.shape_params;
+			let m = mat4.create();
+			let s = vec3.fromValues(ps[0], ps[1], ps[2]);
+			let q = quat.create();
+			let t = vec3.fromValues(ps[3], ps[4], ps[5]);
+			mat4.fromRotationTranslationScale(m, q, t, s);
+			finalPositions.push(...m);
+			finalPositions.push(...o.color_params);
+			finalPositions.push(o.density_params);
+			finalPositions.push(shape_type_id);
+			finalPositions.push(stroke_id);
+			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
+		}
 		else if (shape_type === "capsule") {
 			let ps = o.shape_params;
 			let m = mat4.create();
@@ -227,15 +250,38 @@ export async function loadModel(): Promise<Float32Array> {
 			finalPositions.push(ps[7], ps[8], ps[9]);
 			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
 		}
-		else if (shape_type === "capsule") {
+		else if (shape_type === "line") {
 			let ps = o.shape_params;
 			let m = mat4.create();
-			let s = vec3.fromValues(ps[0], ps[0], ps[0]);
+			let s = vec3.fromValues(ps[2], ps[2], ps[2]);
 			let q = quat.create();
-			quat.fromEuler(q, ps[1] * 180 / Math.PI, ps[2] * 180 / Math.PI, ps[3] * 180 / Math.PI);
-			let t = vec3.fromValues(ps[4], ps[5], ps[6]);
+			quat.fromEuler(q, ps[3] * 180 / Math.PI, ps[4] * 180 / Math.PI, ps[5] * 180 / Math.PI);
+			let rx = quat.create();
+			quat.rotateX(rx, rx, Math.PI / 2);
+			quat.multiply(q, q, rx);
+			let t = vec3.fromValues(ps[6], ps[7], ps[8]);
 			mat4.fromRotationTranslationScale(m, q, t, s);
-			let h = ps[7], r_diff = ps[8];
+			let h = ps[0] * 2, r_diff = ps[1];
+			finalPositions.push(...m);
+			finalPositions.push(...o.color_params);
+			finalPositions.push(o.density_params);
+			finalPositions.push(shape_type_id);
+			finalPositions.push(stroke_id);
+			finalPositions.push(1 + r_diff, 1 - r_diff, h);
+			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
+		}
+		else if (shape_type === "line_a") {
+			let ps = o.shape_params;
+			let m = mat4.create();
+			let s = vec3.fromValues(ps[2], ps[3], ps[4]);
+			let q = quat.create();
+			quat.fromEuler(q, ps[5] * 180 / Math.PI, ps[6] * 180 / Math.PI, ps[7] * 180 / Math.PI);
+			let rx = quat.create();
+			quat.rotateX(rx, rx, Math.PI / 2);
+			quat.multiply(q, q, rx);
+			let t = vec3.fromValues(ps[8], ps[9], ps[10]);
+			mat4.fromRotationTranslationScale(m, q, t, s);
+			let h = ps[0] * 2, r_diff = ps[1];
 			finalPositions.push(...m);
 			finalPositions.push(...o.color_params);
 			finalPositions.push(o.density_params);
