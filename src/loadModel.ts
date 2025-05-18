@@ -78,7 +78,7 @@ export async function loadModel(): Promise<Float32Array> {
 	};	// 带_a的指multiscale，否则是singlescale
 	const finalPositions = [];
 
-	// modelData.shape_type = "roundcube"
+	// modelData.shape_type = "mix"
 	// modelData.stroke_params = {
 	// 	// "strokeNo.1": {
 	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 2.0],
@@ -120,15 +120,21 @@ export async function loadModel(): Promise<Float32Array> {
 	// 	// 	color_params: [1.0, 0, 0],
 	// 	// 	density_params: 1.0,
 	// 	// },
-	// 	"strokeNo.9": {
-	// 		shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0.33],
+	// 	// "strokeNo.9": {
+	// 	// 	shape_params: [1.0, 1.0, 1.0, 0, 0, 0, 0, 0, 0, 0.33],
+	// 	// 	color_params: [1.0, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.10": {
+	// 	// 	shape_params: [0.9, 0.5, 2.0, 1, 3, 0.3, 0, 0, 0, 0.8],
+	// 	// 	color_params: [0, 1.0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	"strokeNo.11": {
+	// 		shape_params: [2.0, 0.3, 1, 0.5, 1.2, 0, 0, 0, 0, 0, 0],
 	// 		color_params: [1.0, 0, 0],
 	// 		density_params: 1.0,
-	// 	},
-	// 	"strokeNo.10": {
-	// 		shape_params: [0.9, 0.5, 2.0, 1, 3, 0.3, 0, 0, 0, 0.8],
-	// 		color_params: [0, 1.0, 0],
-	// 		density_params: 1.0,
+	// 		stroke_type: "line_a"
 	// 	},
 	// }
 
@@ -276,11 +282,11 @@ export async function loadModel(): Promise<Float32Array> {
 			let s = vec3.fromValues(ps[2], ps[3], ps[4]);
 			let q = quat.create();
 			quat.fromEuler(q, ps[5] * 180 / Math.PI, ps[6] * 180 / Math.PI, ps[7] * 180 / Math.PI);
-			let rx = quat.create();
-			quat.rotateX(rx, rx, Math.PI / 2);
-			quat.multiply(q, q, rx);
 			let t = vec3.fromValues(ps[8], ps[9], ps[10]);
 			mat4.fromRotationTranslationScale(m, q, t, s);
+			let rx = mat4.create();
+			mat4.rotateX(rx, rx, Math.PI / 2);
+			mat4.multiply(m, m, rx);
 			let h = ps[0] * 2, r_diff = ps[1];
 			finalPositions.push(...m);
 			finalPositions.push(...o.color_params);
