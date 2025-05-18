@@ -1,5 +1,5 @@
 {
-    "shape_type": "blender_ellipsoid_obb_line",
+    "shape_type": "mix_ellipsoid_obb_line",
     "color_type": "constant_rgb",
     "init_type": "recon",
     "stroke_params": {

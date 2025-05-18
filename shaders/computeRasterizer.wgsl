@@ -4,7 +4,7 @@ const COMPOSITION_METHOD_SOFTMAX = 2;   // Not Support
 
 const TILE_WIDTH = 16;
 const TILE_HEIGHT = 16;                                 // 分片的宽和高，不建议改动
-const STROKE_MAX_COUNT = 32;                            // 每个像素采样的个数
+const STROKE_MAX_COUNT = 128;                            // 每个像素采样的个数
 const STROKE_MAX_COUNT_ADD_1 = STROKE_MAX_COUNT + 1;    
 const STROKE_MAX_COUNT_MUL_2 = STROKE_MAX_COUNT * 2;
 const DENSITY_SCALE = 20;                               // 密度缩放因子，需与论文的python训练实现保持一致
@@ -136,7 +136,7 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if global_id.x >= uniforms.strokeCount { return; }
     let TILE_COUNT_X = (uniforms.screenWidth - 1) / TILE_WIDTH + 1;
     let TILE_COUNT_Y = (uniforms.screenHeight - 1) / TILE_HEIGHT + 1;
-    let index: u32 = global_id.x * 25u;
+    let index: u32 = global_id.x * 27u;
     var base: Entity;
     base = getEntity(index);
     // 直接判图元太难，可以判图元的包围盒
@@ -160,6 +160,18 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
             vec3<f32>(-r, r, -h), vec3<f32>(-r, r, h),
             vec3<f32>(r, -r, -h), vec3<f32>(r, -r, h),
             vec3<f32>(r, r, -h), vec3<f32>(r, r, h)
+        );
+    } else if base.shape == 8 {
+        // Mix: Ellipsoid Obb Line
+        // 这样单独处理比较丑陋，最好是typescript中生成
+        let l = strokeBuffer.data[index + 22u];
+        let r = 1.0 + abs(strokeBuffer.data[index + 23u]);
+        let h = l + r;
+        cubes = array<vec3<f32>, 8>(
+            vec3<f32>(-r, -h, -r), vec3<f32>(-r, h, -r),
+            vec3<f32>(-r, -h, r), vec3<f32>(-r, h, r),
+            vec3<f32>(r, -h, -r), vec3<f32>(r, h, -r),
+            vec3<f32>(r, -h, r), vec3<f32>(r, h, r)
         );
     }
     for (var i = 0u; i < 8u; i++) {
@@ -252,6 +264,32 @@ fn sdf_roundbox(p: vec3f, b: vec3f, r: f32) -> f32 {
     return length(max(q, vec3f(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
 }
 
+fn sdf_sphere(p: vec3f, r: f32) -> f32 {
+    return length(p) - r;
+}
+
+fn sdf_box(p: vec3f, b: vec3f) -> f32 {
+    let q = abs(p) - b;
+    return length(max(q, vec3f(0.0))) + min(0.0, max(q.x, max(q.y, q.z)));
+}
+
+fn lerp(a: f32, b: f32, t: f32) -> f32 { return a + (b - a) * t; }
+
+fn sdf_line(p: vec3f, h: f32, r_diff: f32) -> f32 {
+    let t: f32 = clamp((p.y + h) / (2.0 * h), 0.0, 1.0);
+    let r: f32 = lerp(1.0 - r_diff, 1.0 + r_diff, t);
+    var q = p;
+    q.y -= clamp(p.y, -h, h);
+    return length(q) - r;
+}
+
+fn sdf_mix_ellipsoid_obb_line(p: vec3f, h: f32, r_diff: f32, w1: f32, w2: f32, w3: f32) -> f32 {
+    // w1 = exp(w1);  w2 = exp(w2); w3 = exp(w3);
+    // ws = w1 + w2 + w3;
+    // w1 = w1 / ws; w2 = w2 / ws; w3 = w3 / ws;
+    return w1 * sdf_sphere(p, 1.0) + w2 * sdf_box(p, vec3f(1.0)) + w3 * sdf_line(p, h, r_diff);
+}
+
 // 16x16 pixels per tile
 @compute @workgroup_size(1, 1, 64)
 fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -279,7 +317,7 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var samples: array<LightPillar, STROKE_MAX_COUNT_ADD_1>;
     var sampleCount: u32 = 0;
     for (var i: u32 = 0; i < listCount; i++) {
-        let index = binBuffer.id[indexBias + i] * 25u;
+        let index = binBuffer.id[indexBias + i] * 27u;
         let e : Entity = getEntity(index);
         var tmp: LightPillar;
         tmp.id = e.id;
@@ -637,6 +675,60 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let _p2 = u_norm * solutions[1] + v;
             let p1 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p1, 1);
             let p2 = uniforms.modelViewMatrix * data.base.transform * vec4f(_p2, 1);
+            var d1 = -p1.z / p1.w;
+            var d2 = -p2.z / p2.w;
+            if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }
+            tmp.depth = d1;
+            tmp.length = d2 - d1;
+            //tmp.key = tmp.density * exp(-LIGHT_PILLAR_LAMBDA * tmp.depth);
+            tmp.key = tmp.depth;
+        }
+        else if e.shape == 8 {
+            let h = strokeBuffer.data[index + 22u];
+            let r_diff = strokeBuffer.data[index + 23u];
+            let w1 = strokeBuffer.data[index + 24u];
+            let w2 = strokeBuffer.data[index + 25u];
+            let w3 = strokeBuffer.data[index + 26u];
+            let m = uniforms.modelViewProjectionMatrix * e.transform;
+            let m_inv = inverse(m);
+            var _u: vec4f = m_inv * vec4<f32>(f32(pixelX) / f32(uniforms.screenWidth) * 2f - 1f, f32(pixelY) / f32(uniforms.screenHeight) * 2f - 1f, 1, 1);
+            _u /= _u.w;
+            var _v: vec4f = m_inv * vec4<f32>(0, 0, 0, 1);
+            _v /= _v.w;
+            let u: vec3f = (_u - _v).xyz;
+            let v: vec3f = _v.xyz;
+            let u_norm: vec3f = normalize(u);
+            var solutionCount: u32 = 0;
+            var solutions: array<f32, 2>;
+            var t: f32 = 0.0;
+            for (var ans = 0; ans < 2; ans++) {
+                var hit = false;
+                for (var i = 0; i < RAYMARCHING_MAX_STEPS; i++) {
+                    let p = v + u_norm * t;
+                    let d = abs(sdf_mix_ellipsoid_obb_line(p, h, r_diff, w1, w2, w3));
+                    if (d < RAYMARCHING_HIT_THRESHOLD) { hit = true; break; }
+                    if (t > RAYMARCHING_MAX_DIST) { break; }
+                    t += d;
+                }
+                if (hit) {
+                    solutions[solutionCount] = t;
+                    solutionCount++;
+                    var k: f32 = 3;
+                    while (k < 100) {
+                        let p = v + u_norm * (t + RAYMARCHING_HIT_THRESHOLD * k);
+                        let d = abs(sdf_mix_ellipsoid_obb_line(p, h, r_diff, w1, w2, w3));
+                        if d > RAYMARCHING_HIT_THRESHOLD { break; }
+                        k += 10;
+                    }
+                    t += RAYMARCHING_HIT_THRESHOLD * k;
+                }
+                else { break; }
+            }
+            if solutionCount < 2 { continue; }
+            let _p1 = u_norm * solutions[0] + v;
+            let _p2 = u_norm * solutions[1] + v;
+            let p1 = uniforms.modelViewMatrix * e.transform * vec4f(_p1, 1);
+            let p2 = uniforms.modelViewMatrix * e.transform * vec4f(_p2, 1);
             var d1 = -p1.z / p1.w;
             var d2 = -p2.z / p2.w;
             if d1 > d2 { let _d = d1; d1 = d2; d2 = _d; }

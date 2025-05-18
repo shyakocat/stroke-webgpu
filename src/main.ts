@@ -199,7 +199,7 @@ function createRasterizerPass(device: GPUDevice, presentationSize: number[], str
     //const NUMBER_PRE_ELEMENT = 20           // transform 4x4 f32, color 3 f32, density 1 f32
     //const NUMBER_PRE_ELEMENT = 23           // Capsule
     //const NUMBER_PRE_ELEMENT = strokeType == 5 ? 23 : 20;
-    const NUMBER_PRE_ELEMENT = 25;
+    const NUMBER_PRE_ELEMENT = 27;
     const strokeCount = strokeData.length / NUMBER_PRE_ELEMENT
     const strokeBuffer = device.createBuffer({ size: strokeData.byteLength, usage: GPUBufferUsage.STORAGE, mappedAtCreation: true, })
     new Float32Array(strokeBuffer.getMappedRange()).set(strokeData);
