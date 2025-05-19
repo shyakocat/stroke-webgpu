@@ -13,7 +13,7 @@ const eps = 1e-5;
 const COMPOSITION_METHOD = COMPOSITION_METHOD_OVERLAY;
 const COMPOSITION_METHOD_SOFTMAX_TAO = 0.05;
 
-const RAYMARCHING_MAX_DIST = 100.0;
+const RAYMARCHING_MAX_DIST = 1000.0;
 const RAYMARCHING_MAX_STEPS = 200;
 const RAYMARCHING_HIT_THRESHOLD = 0.001;
 
@@ -165,8 +165,8 @@ fn tile(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Mix: Ellipsoid Obb Line
         // 这样单独处理比较丑陋，最好是typescript中生成
         let l = strokeBuffer.data[index + 22u];
-        let r = 1.0 + abs(strokeBuffer.data[index + 23u]);
-        let h = l + r;
+        let r = max(1.0, 1.0 + abs(strokeBuffer.data[index + 23u]));
+        let h = max(1.0, l + r);
         cubes = array<vec3<f32>, 8>(
             vec3<f32>(-r, -h, -r), vec3<f32>(-r, h, -r),
             vec3<f32>(-r, -h, r), vec3<f32>(-r, h, r),
@@ -275,12 +275,35 @@ fn sdf_box(p: vec3f, b: vec3f) -> f32 {
 
 fn lerp(a: f32, b: f32, t: f32) -> f32 { return a + (b - a) * t; }
 
+fn sdf_cone(p: vec3f, h: f32, r1: f32, r2: f32) -> f32 {
+    let q = vec2f(length(p.xz), p.y);
+    let k1 = vec2f(r2, h);
+    let k2 = vec2f(r2 - r1, 2.0 * h);
+    let ca = vec2f(q.x - min(q.x, select(r2, r1, q.y < 0)), abs(q.y) - h);
+    let cb = q - k1 + k2 * clamp(dot(k1 - q, k2) / dot(k2, k2), 0.0, 1.0);
+    let s: f32 = select(1.0, -1.0, cb.x < 0 && ca.y < 0);
+    return s * sqrt(min(dot(ca, ca), dot(cb, cb)));
+}
+
+fn sdf_cutsphere(p: vec3f, r: f32, h: f32) -> f32 {
+    let w: f32 = sqrt(r * r - h * h);
+    let q = vec2f(length(p.xz), p.y);
+    let s: f32 = max((h - r) * q.x * q.x + w * w * (h + r - 2.0 * q.y), h * q.x - w * q.y);
+    if s < 0 { return length(q) - r; }
+    if q.x < w { return h - q.y; }
+    return length(q - vec2f(w, h));
+}
+
 fn sdf_line(p: vec3f, h: f32, r_diff: f32) -> f32 {
-    let t: f32 = clamp((p.y + h) / (2.0 * h), 0.0, 1.0);
-    let r: f32 = lerp(1.0 - r_diff, 1.0 + r_diff, t);
-    var q = p;
-    q.y -= clamp(p.y, -h, h);
-    return length(q) - r;
+    // 这个SDF公式是错的，只有ra=rb时才对
+    // let t: f32 = clamp((p.y + h) / (2.0 * h), 0.0, 1.0);
+    // let r: f32 = lerp(1.0 - r_diff, 1.0 + r_diff, t);
+    // return length(vec3f(p.x, p.y - clamp(p.y, -h, h), p.z)) - r;
+    // return sdf_cutsphere(vec3f(p.x, p.y - h, p.z), 1.0 + r_diff, 0);
+    // return sdf_cone(p, h, 1.0 - r_diff, 1.0 + r_diff);
+    return min(sdf_cone(p, h, 1.0 - r_diff, 1.0 + r_diff),
+           min(sdf_cutsphere(vec3f(p.x,  p.y - h, p.z), 1.0 + r_diff, 0), 
+               sdf_cutsphere(vec3f(p.x, -p.y - h, p.z), 1.0 - r_diff, 0)));
 }
 
 fn sdf_mix_ellipsoid_obb_line(p: vec3f, h: f32, r_diff: f32, w1: f32, w2: f32, w3: f32) -> f32 {
@@ -288,6 +311,7 @@ fn sdf_mix_ellipsoid_obb_line(p: vec3f, h: f32, r_diff: f32, w1: f32, w2: f32, w
     // ws = w1 + w2 + w3;
     // w1 = w1 / ws; w2 = w2 / ws; w3 = w3 / ws;
     return w1 * sdf_sphere(p, 1.0) + w2 * sdf_box(p, vec3f(1.0)) + w3 * sdf_line(p, h, r_diff);
+    //return sdf_line(p, h, r_diff);
 }
 
 // 16x16 pixels per tile
@@ -649,26 +673,26 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var solutions: array<f32, 2>;
             var t: f32 = 0.0;
             for (var ans = 0; ans < 2; ans++) {
+                // 这里我们假设SDF是一个凸几何体，这样可以从无穷远处倒回来求交第二个点
                 var hit = false;
                 for (var i = 0; i < RAYMARCHING_MAX_STEPS; i++) {
                     let p = v + u_norm * t;
                     let d = abs(sdf_roundbox(p, vec3f(1.0, 1.0, 1.0), data.r));
                     if (d < RAYMARCHING_HIT_THRESHOLD) { hit = true; break; }
-                    if (t > RAYMARCHING_MAX_DIST) { break; }
                     t += d;
+                    if (t > RAYMARCHING_MAX_DIST) { break; }
                 }
-                if (hit) {
-                    solutions[solutionCount] = t;
-                    solutionCount++;
-                    var k: f32 = 3;
-                    while (k < 100) {
-                        let d = abs(sdf_roundbox(v + u_norm * (t + RAYMARCHING_HIT_THRESHOLD * k), vec3f(1.0, 1.0, 1.0), data.r));
-                        if d > RAYMARCHING_HIT_THRESHOLD { break; }
-                        k += 10;
-                    }
-                    t += RAYMARCHING_HIT_THRESHOLD * k;
+                if (hit) { solutions[solutionCount] = t; solutionCount++; } else { break; }
+                hit = false;
+                t = RAYMARCHING_MAX_DIST;
+                for (var i = 0; i < RAYMARCHING_MAX_STEPS; i++) {
+                    let p = v + u_norm * t;
+                    let d = abs(sdf_roundbox(p, vec3f(1.0, 1.0, 1.0), data.r));
+                    if (d < RAYMARCHING_HIT_THRESHOLD) { hit = true; break; }
+                    t -= d;
+                    if (t < 0) { break; }
                 }
-                else { break; }
+                if (hit) { solutions[solutionCount] = t; solutionCount++; }
             }
             if solutionCount < 2 { continue; }
             let _p1 = u_norm * solutions[0] + v;
@@ -703,26 +727,30 @@ fn rasterize(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var t: f32 = 0.0;
             for (var ans = 0; ans < 2; ans++) {
                 var hit = false;
+                let d = sdf_mix_ellipsoid_obb_line(v, h, r_diff, w1, w2, w3);
+                if d < 0 {
+                    solutions[solutionCount] = 0; solutionCount++;
+                }
+                else {
+                    for (var i = 0; i < RAYMARCHING_MAX_STEPS; i++) {
+                        let p = v + u_norm * t;
+                        let d = abs(sdf_mix_ellipsoid_obb_line(p, h, r_diff, w1, w2, w3));
+                        if (d < RAYMARCHING_HIT_THRESHOLD) { hit = true; break; }
+                        t += d;
+                        if (t > RAYMARCHING_MAX_DIST) { break; }
+                    }
+                    if (hit) { solutions[solutionCount] = t; solutionCount++; } else { break; }
+                }
+                hit = false;
+                t = RAYMARCHING_MAX_DIST;
                 for (var i = 0; i < RAYMARCHING_MAX_STEPS; i++) {
                     let p = v + u_norm * t;
                     let d = abs(sdf_mix_ellipsoid_obb_line(p, h, r_diff, w1, w2, w3));
                     if (d < RAYMARCHING_HIT_THRESHOLD) { hit = true; break; }
-                    if (t > RAYMARCHING_MAX_DIST) { break; }
-                    t += d;
+                    t -= d;
+                    if (t < 0) { break; }
                 }
-                if (hit) {
-                    solutions[solutionCount] = t;
-                    solutionCount++;
-                    var k: f32 = 3;
-                    while (k < 100) {
-                        let p = v + u_norm * (t + RAYMARCHING_HIT_THRESHOLD * k);
-                        let d = abs(sdf_mix_ellipsoid_obb_line(p, h, r_diff, w1, w2, w3));
-                        if d > RAYMARCHING_HIT_THRESHOLD { break; }
-                        k += 10;
-                    }
-                    t += RAYMARCHING_HIT_THRESHOLD * k;
-                }
-                else { break; }
+                if (hit) { solutions[solutionCount] = t; solutionCount++; }
             }
             if solutionCount < 2 { continue; }
             let _p1 = u_norm * solutions[0] + v;

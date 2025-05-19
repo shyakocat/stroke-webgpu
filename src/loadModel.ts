@@ -1,12 +1,12 @@
 import { mat4, vec3, quat } from 'gl-matrix';
 //import { WebIO } from '@gltf-transform/core';
 //@ts-ignore
-import modelData from '../models/lego_line/temp.json'
+//import modelData from '../models/lego_line/temp.json'
 //import modelData from '../models/chair_line_1000/stroke.json'
 //import modelData from '../models/lego_ellipsoid_1250/stroke.json'
 //import modelData from '../models/lego_cylinder/temp.json'
 //import modelData from '../models/lego_mix_ellipsoid_obb_line/strokes.proc.json'
-//import modelData from '../models/lego_mix_ellipsoid_obb_line/strokes.json'
+import modelData from '../models/lego_mix_ellipsoid_obb_line/strokes.json'
 //import modelData from '../models/lego_mix_line_aabb/temp.json'
 //import modelData from '../models/lego_mix_ellipsoid_tetrahedron/temp.json'
 //import modelData from '../models/lego_ellipsoid_softmax/stroke.json'
@@ -83,19 +83,48 @@ export async function loadModel(): Promise<Float32Array> {
 
 	// modelData.shape_type = "mix_ellipsoid_obb_line"
 	// modelData.stroke_params = {
+	// 	// "strokeNo.1": {
+	// 	// 	shape_params: [-1e7, -1e7, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0],
+	// 	// 	color_params: [1.0, 0, 0],
+	// 	// 	density_params: 1.0,
+	// 	// },
+	// 	// "strokeNo.2": {
+	// 	// 	shape_params: [-1e7, 0, 1e-7, 2, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1],
+	// 	// 	color_params: [0, 1.0, 0],
+	// 	// 	density_params: 2.0,
+	// 	// },
+	// 	// "strokeNo.3": {
+	// 	// 	shape_params: [-1e7, 1e-7, 0, 1.5, 0, 1, 2, 1, 0, 0, 0, 0, 1, 0],
+	// 	// 	color_params: [0, 0, 1.0],
+	// 	// 	density_params: 0.2,
+	// 	// },
+	// 	"strokeNo.4": {
+	// 		shape_params: [
+	// 			-7.875893592834473,
+    //             -8.380470275878906,
+    //             9.721820831298828,
+    //             0.8666794300079346,
+    //             -0.7970864176750183,
+    //             0.013891801238059998,
+    //             0.014406065456569195,
+    //             0.027642343193292618,
+    //             3.1414153575897217,
+    //             -2.9568047523498535,
+    //             -1.2798529863357544,
+    //             -0.01942838914692402,
+    //             0.43536317348480225,
+    //             0.4648509621620178
+	// 		],
+	// 		color_params: [1, 0, 0],
+	// 		density_params: 0.2,
+	// 	}
+	// }
+
+	// modelData.shape_type = "roundcube"
+	// modelData.stroke_params = {
 	// 	"strokeNo.1": {
-	// 		shape_params: [-1e7, -1e7, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0],
+	// 		shape_params: [1, 1, 1, 0, 0, 0, 0, 0, 0, 0.33],
 	// 		color_params: [1.0, 0, 0],
-	// 		density_params: 1.0,
-	// 	},
-	// 	"strokeNo.2": {
-	// 		shape_params: [-1e7, 0, 1e-7, 2, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1],
-	// 		color_params: [0, 1.0, 0],
-	// 		density_params: 1.0,
-	// 	},
-	// 	"strokeNo.3": {
-	// 		shape_params: [-1e7, 1e-7, 0, 1.5, 0, 1, 2, 1, 0, 0, 0, 0, 1, 0],
-	// 		color_params: [0, 0, 1.0],
 	// 		density_params: 1.0,
 	// 	},
 	// }
@@ -103,7 +132,8 @@ export async function loadModel(): Promise<Float32Array> {
 	for (let [strokeNo, o] of Object.entries(modelData.stroke_params)) {
 		const m = /strokeNo.(\d+)/.exec(strokeNo);
 		if (m === null) { continue; }
-		const stroke_id = Number(m[1]); 
+		const stroke_id = Number(m[1]);
+		// if (stroke_id < 150 || stroke_id > 200) { continue; }
 		const shape_type = modelData.shape_type === 'mix' ? o.stroke_type : modelData.shape_type;
 		const shape_type_id = primitiveTypeTable[shape_type];
 		if (shape_type === "cubic_bezier") {
@@ -156,7 +186,7 @@ export async function loadModel(): Promise<Float32Array> {
 				}
 			}
 		}
-		else if (shape_type === "ellipsoid" || shape_type === "cube_a" || shape_type === "tetrahedron_a" || 
+		else if (shape_type === "ellipsoid" || shape_type === "cube_a" || shape_type === "tetrahedron_a" ||
 			shape_type === "octahedron_a" || shape_type === "cylinder" || shape_type === "roundcube") {
 			let ps = o.shape_params;
 			let m = mat4.create();
@@ -290,9 +320,9 @@ export async function loadModel(): Promise<Float32Array> {
 			let [w1, w2, w3] = ps.slice(0, 3).map(Math.exp);
 			let ws = w1 + w2 + w3;
 			[w1, w2, w3] = [w1 / ws, w2 / ws, w3 / ws];
-			if (w1 >= w2 && w2 >= w3) [w1, w2, w3] = [1, 0, 0];
-			else if (w2 >= w1 && w2 >= w3) [w1, w2, w3] = [0, 1, 0];
-			else [w1, w2, w3] = [0, 0, 1];
+			// if (w1 >= w2 && w2 >= w3) [w1, w2, w3] = [1, 0, 0];
+			// else if (w2 >= w1 && w2 >= w3) [w1, w2, w3] = [0, 1, 0];
+			// else [w1, w2, w3] = [0, 0, 1];
 			finalPositions.push(ps[3], ps[4], w1, w2, w3);
 			while (finalPositions.length % ALIGN_SIZE !== 0) { finalPositions.push(0); }
 		}
